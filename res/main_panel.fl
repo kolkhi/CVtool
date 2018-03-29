@@ -1,0 +1,125 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0304
+header_name {.h}
+code_name {.cxx}
+comment {//
+// "$Id: main_panel.fl 01 2018-03-29 18:21:11Z gsergia $"
+//
+// FLUID template support for the Fast Light Tool Kit (FLTK).
+//
+// Copyright 1998-2016 by Bill Spitzak and others.
+//
+// This library is free software. Distribution and use rights are outlined in
+// the file "COPYING" which should have been included with this file.  If this
+// file is missing or damaged, see the license at:
+//
+//     http://www.fltk.org/COPYING.php
+//
+// Please report all bugs and problems on the following page:
+//
+//     http://www.fltk.org/str.php
+//
+} {in_source in_header
+}
+
+decl {\#include <stdio.h>} {private local
+}
+
+decl {\#include <stdlib.h>} {private local
+}
+
+decl {\#include "../src/flstring.h"} {private local
+}
+
+decl {\#include <errno.h>} {private local
+}
+
+decl {\#include <FL/filename.H>} {private local
+}
+
+decl {\#include <FL/fl_ask.H>} {private local
+}
+
+decl {\#include <FL/Fl_Shared_Image.H>} {private local
+}
+
+decl {\#include <FL/Fl_Preferences.H>} {private local
+}
+
+declblock {\#if defined(WIN32) && !defined(__CYGWIN__)} {after {\#endif // WIN32 && !__CYGWIN__}
+} {
+  decl {\#include <io.h>} {private local
+  }
+  decl {\#else} {private local
+  }
+  decl {\#include <unistd.h>} {private local
+  }
+}
+
+decl {extern Fl_Preferences fluid_prefs;} {private local
+}
+
+class MainWnd {
+  comment {Main window class} open : {public FL_Single_Window}
+} {
+  Function {make_main_panel()} {open
+  } {}
+}
+
+Function {make_main_panel()} {open
+} {
+  Fl_Window main_panel {
+    label CVTool
+    callback {Fl_Shared_Image *img = (Fl_Shared_Image *)template_preview->image();
+if (img) img->release();}
+    xywh {973 213 540 190} type Double
+    class MainWnd non_modal size_range {540 190 540 190} visible
+  } {
+    Fl_Text_Editor {} {
+      label {Video file}
+      private tooltip {Video file path} xywh {25 25 465 25} align 5
+    }
+    Fl_Button loadVideo {
+      label {...}
+      private tooltip {Load video file} xywh {490 25 25 25} down_box DOWN_BOX
+    }
+    Fl_Pack {} {
+      private xywh {25 120 490 50} type HORIZONTAL box FLAT_BOX labeltype NO_LABEL when 6
+    } {
+      Fl_Group {} {open
+        xywh {25 125 315 40}
+      } {
+        Fl_Button firstFrameBtn {
+          private image {../res/first.png} xywh {25 125 40 40} align 512
+        }
+        Fl_Button prevFrameBtn {
+          private image {../res/prev.png} xywh {80 125 40 40} align 512
+        }
+        Fl_Button playBtn {
+          private image {../res/play.png} xywh {135 125 40 40} align 512
+        }
+        Fl_Button stopBtn {
+          private image {../res/stop.png} xywh {190 125 40 40} align 512
+        }
+        Fl_Button nexrFramBtne {
+          private image {../res/next.png} xywh {245 125 40 40} align 512
+        }
+        Fl_Button lastFrameBtn {
+          private image {../res/last.png} xywh {300 125 40 40} align 512
+        }
+      }
+      Fl_Button pauseBtn {
+        private image {../res/pause.png} xywh {135 125 40 40} hide
+      }
+    }
+    Fl_Slider playTrackbar {
+      private xywh {25 75 490 27} type {Horz Knob} box FLAT_BOX maximum 100 step 1
+    }
+  }
+}
+
+comment {
+//
+// End of "$Id:  main_panel.fl 01 2018-03-29 18:21:11Z gsergia $".
+//} {in_source in_header
+}
