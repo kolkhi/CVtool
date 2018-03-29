@@ -49,6 +49,8 @@
                 "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/",
                 "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/c++",
                 "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/c++/mingw32",
+                "${workspaceRoot}/fltk/",
+                "${workspaceRoot}/includes/",
                 "${workspaceRoot}"
             ],
             "defines": [
@@ -63,13 +65,15 @@
                     "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/*",
                     "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/c++/*",
                     "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/c++/mingw32/*",
+                    "${workspaceRoot}/fltk/*",
+                    "${workspaceRoot}/includes/*",
                     "${workspaceRoot}"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
             },
             "cStandard": "c11",
-            "cppStandard": "c++17"
+            "cppStandard": "c++14"
         }
     ],
     "version": 3

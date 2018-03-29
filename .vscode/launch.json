@@ -8,14 +8,14 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/vetool.exe",
+            "program": "${workspaceFolder}/build/cvtool.exe",
             "args": [],
-            "stopAtEntry": false,
+            "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "gdb.exe",
+            "miDebuggerPath": "F:/Development/mingw-w64/bin/gdb.exe",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -23,7 +23,10 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "build debug main"
+            "preLaunchTask": "build debug main",
+            "logging": { "trace": true, "traceResponse": true, "engineLogging": true, "moduleLoad": true },
+            "visualizerFile": "${workspaceRoot}/my.natvis",
+            "showDisplayString": true
         }
     ]
 }
