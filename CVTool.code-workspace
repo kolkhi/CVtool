@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"c-cpp-flylint.cppcheck.executable": "F:\\Development\\Cppcheck\\cppcheck.exe",
+		"c-cpp-flylint.flexelint.enable": false,
+		"c-cpp-flylint.clang.enable": false,
+		"cmake.preferredGenerators": [
+			"MinGW Makefiles"
+		],
+		"cmake.mingwSearchDirs": [
+			"F:\\Development\\mingw-w64"
+		],
+		"cmake.useCMakeServer": false
+	}
+}

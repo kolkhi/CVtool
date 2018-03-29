@@ -1,0 +1,34 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build debug main",
+      "type": "shell",
+      "command": "g++",
+      "args": [
+        "-g",
+        "-O0",
+        "-Wall",
+        "./src/main.cpp",
+        "-o",
+        "./build/vetool",
+        "-static-libgcc",
+        "-static-libstdc++",
+        "-DDEBUG"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+    "name": "GCC 6.3.0",
+    "compilers": {
+      "C": "gcc.exe",
+      "CXX": "g++.exe"
+    }
+}
