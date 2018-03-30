@@ -1,5 +1,6 @@
 build/*
 fltk/*
+.vscode/.cmaketools.json
 libuavv_video.dll
 uavv_video.hw
 uavv_video.lic
