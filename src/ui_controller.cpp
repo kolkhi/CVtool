@@ -369,7 +369,7 @@ void UIController::LastFrameClick()
         main_panel->labelfont(0);
         main_panel->labelsize(14);
         main_panel->labelcolor(FL_FOREGROUND_COLOR);
-        //main_panel->callback((Fl_Callback*)cb_main_panel);
+        main_panel->callback(UIController::OnCloseMainWnd, (void*)controller);
         main_panel->align(Fl_Align(FL_ALIGN_CENTER));
         main_panel->when(FL_WHEN_RELEASE);
         { 
@@ -479,4 +479,24 @@ void UIController::LastFrameClick()
         o->resizable(o);
     } // RenderWnd* o
     return w;
+}
+
+void UIController::ExitApplicaion()
+{
+    if(renderWnd->shown())
+        renderWnd->hide();
+
+    exit(0);
+}
+
+/*static*/ void UIController::OnCloseMainWnd(Fl_Widget*, void* pUserData)
+{
+    assert(pUserData);
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->ExitApplicaion();
 }
