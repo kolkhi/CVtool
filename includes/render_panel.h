@@ -52,8 +52,6 @@ namespace cvtool
         void draw();
 
     public:
-        static RenderWnd* make_video_panel(int W, int H, const char* l = 0);
-        
         RenderWnd(int W, int H, const char* l = 0);
         //void updateFrame(const UAVV_IMAGE buf);
     };

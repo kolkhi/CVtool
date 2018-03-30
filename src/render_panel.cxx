@@ -65,57 +65,35 @@ void RenderWnd::updateFrame(const UAVV_IMAGE buf)
 
 void RenderWnd::draw()
 {
-    /*if (!valid())  
+    if (!valid())  
       ortho();
 
     // Update GL frame
-    if (mpFrame)
+    /*if (mpFrame)
     {
         mGlFrame.copy(mpFrame);
         uavv_image_destroy(mpFrame);
         mpFrame = NULL;
-    }
+    }*/
 
-    glClearColor(0, 0, 0, 0);
+    glClearColor(0.5, 0.5, 0.5, 0.5);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (!mGlFrame.isValid())  return;
+    //if (!mGlFrame.isValid())  return;
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
     // Fit GL frame to window
-    float scale_x = w() / (float)mGlFrame.width();
-    float scale_y = h() / (float)mGlFrame.height();
+    float scale_x = w();// / (float)mGlFrame.width();
+    float scale_y = h();// / (float)mGlFrame.height();
     glPushMatrix();
     glScalef(scale_x, scale_y, 1.0);
-    mGlFrame.draw();
+    //mGlFrame.draw();
     glPopMatrix();
 
-    glDisable(GL_BLEND);*/
-}
-
-/*static*/ RenderWnd* RenderWnd::make_video_panel(int W, int H, const char* l) 
-{
-  RenderWnd* w;
-  { 
-    RenderWnd* o = new RenderWnd(W, H, l);
-    w = o; if (w) {/* empty */}
-    o->box(FL_FLAT_BOX);
-    o->color(FL_BACKGROUND_COLOR);
-    o->selection_color(FL_BACKGROUND_COLOR);
-    o->labeltype(FL_NO_LABEL);
-    o->labelfont(0);
-    o->labelsize(14);
-    o->labelcolor(FL_FOREGROUND_COLOR);
-    o->align(Fl_Align(FL_ALIGN_TOP));
-    o->when(FL_WHEN_RELEASE);
-    o->set_non_modal();
-    o->end();
-    o->resizable(o);
-  } // RenderWnd* o
-  return w;
+    glDisable(GL_BLEND);
 }
 
 //

@@ -20,6 +20,7 @@
         "./src/main.cpp",
         "./src/main_panel.cxx",
         "./src/render_panel.cxx",
+        "./src/ui_controller.cpp",
         "-I\"./includes\"",
         "-I\"./fltk/\"",
         "-o",

@@ -7,7 +7,7 @@
 	"settings": {
 		"c-cpp-flylint.cppcheck.executable": "F:\\Development\\Cppcheck\\cppcheck.exe",
 		"c-cpp-flylint.flexelint.enable": false,
-		"c-cpp-flylint.clang.enable": false,
+		"c-cpp-flylint.clang.enable": true,
 		"cmake.preferredGenerators": [
 			"MinGW Makefiles"
 		],

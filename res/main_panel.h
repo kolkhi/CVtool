@@ -20,25 +20,21 @@
 
 #ifndef main_panel_h
 #define main_panel_h
-
 #include <FL/Fl.H>
-#include <FL/Fl_Double_Window.H>
-
 
 /**
  Main window class
 */
-namespace cvtool
-{
-  class MainWnd : public Fl_Double_Window 
-  {
-      public:
-          MainWnd(int X, int Y, int W, int H, const char* l = 0);
-  };
-}
-
-extern cvtool::MainWnd *main_panel;
-
+class MainWnd : public FL_Single_Window {
+public:
+  void make_main_panel();
+};
+extern MainWnd *main_panel;
+#include <FL/Fl_Text_Editor.H>
+#include <FL/Fl_Button.H>
+#include <FL/Fl_Pack.H>
+#include <FL/Fl_Slider.H>
+MainWnd* make_main_panel();
 #endif
 
 //
