@@ -374,7 +374,6 @@ void UIController::LastFrameClick()
         main_panel->when(FL_WHEN_RELEASE);
         { 
             fileNameEdit = new Fl_Input(25, 25, 465, 25, "Video file");
-            //fileNameEdit->en(0);
             fileNameEdit->tooltip("Video file path");
             fileNameEdit->align(Fl_Align(FL_ALIGN_TOP_LEFT));
         } // Fl_Input* fileNameEdit
@@ -384,9 +383,6 @@ void UIController::LastFrameClick()
             loadVideo->down_box(FL_DOWN_BOX);
             loadVideo->callback(UIController::OnPickFile);
             loadVideo->image( image_open() );   
-            //Fl_File_Icon  *icon = Fl_File_Icon::find(".", Fl_File_Icon::DIRECTORY);
-            //icon->label(loadVideo);
-
         } // Fl_Button* loadVideo
         
         { 
@@ -438,6 +434,7 @@ void UIController::LastFrameClick()
             playTrackbar->box(FL_FLAT_BOX);
             playTrackbar->maximum(100);
             playTrackbar->step(1);
+            playTrackbar->callback(UIController::OnSliderPosChange, (void*)controller);
         } // Fl_Slider* playTrackbar
         
         { 
@@ -449,6 +446,7 @@ void UIController::LastFrameClick()
             toggleVideoWnd->align(Fl_Align(512));
             toggleVideoWnd->value(controller->IsVideoRenderVisible() ? 1 : 0);
             toggleVideoWnd->callback(UIController::OnToggleRender, (void*)controller);
+            toggleVideoWnd->tooltip("Show/Hide playback window");
         } // Fl_Button* toggleVideoWnd
 
         main_panel->set_non_modal();
@@ -500,3 +498,22 @@ void UIController::ExitApplicaion()
 
     controller->ExitApplicaion();
 }
+
+void UIController::SliderPosChange(int pos)
+{
+    fl_message("Slider pos changed %d", pos);
+}
+
+/*static*/ void UIController::OnSliderPosChange(Fl_Widget* widget, void* pUserData)
+{
+    assert(pUserData);
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    Fl_Slider* slider = static_cast<Fl_Slider*>(widget);
+    controller->SliderPosChange(slider->value());
+}
+

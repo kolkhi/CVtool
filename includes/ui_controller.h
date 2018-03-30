@@ -45,6 +45,8 @@ namespace cvtool
             void StopClick();
             void NextFrameClick();
             void LastFrameClick();
+            void SliderPosChange(int pos);
+
             void ExitApplicaion();
             
             static UIController* CreateInstance();
@@ -64,6 +66,7 @@ namespace cvtool
             static void OnNextFrameClick(Fl_Widget*, void*);
             static void OnLastFrameClick(Fl_Widget*, void*);
             static void OnCloseMainWnd(Fl_Widget*, void*);
+            static void OnSliderPosChange(Fl_Widget*, void*);
     };
 }
 
