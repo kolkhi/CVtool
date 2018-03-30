@@ -9,11 +9,13 @@ find_package(FLTK REQUIRED NO_MODULE)
 include_directories(./fltk)
 include_directories(./includes)
 
-add_executable(CVTool WIN32 ./src/main.cpp ./src/main_panel.cxx ./src/main_panel.cxx)
+add_executable(CVTool WIN32 ./src/main.cpp ./src/main_panel.cxx ./src/render_panel.cxx ./src/ui_controller.cpp)
 
 target_link_libraries(CVTool fltk)
+target_link_libraries(CVTool fltk_gl)
 target_link_libraries(CVTool ws2_32)
-target_link_libraries(CVTool uavv_video)
+
+#target_link_libraries(CVTool uavv_video)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
