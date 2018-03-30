@@ -67,6 +67,8 @@
             "intelliSenseMode": "msvc-x64",
             "browse": {
                 "path": [
+                    "${workspaceRoot}/fltk",
+                    "${workspaceRoot}/includes",
                     "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include",
                     "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include-fixed",
                     "F:/Development/mingw-w64/include/*"
