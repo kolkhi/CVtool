@@ -937,6 +937,6 @@ static const unsigned char idata_toggle[] =
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-const char fileFilter[] = "TS video\t*.ts\nAll files\t*.*";
+const char fileFilter[] = "TS video\t*.ts";
 
 #endif
