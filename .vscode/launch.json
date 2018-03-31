@@ -8,14 +8,20 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/cvtool.exe",
+            "windows": {
+                "program": "${workspaceFolder}/build/cvtool.exe",
+                "miDebuggerPath": "gdb.exe"    
+            },
+            "linux": {
+                "program": "${workspaceFolder}/build/CVtool",
+                "miDebuggerPath": "gdb"
+            },
             "args": [],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "gdb.exe",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

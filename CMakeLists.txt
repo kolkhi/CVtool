@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(CVTool VERSION 0.1.0)
+project(CVtool VERSION 0.1.0)
 
 include(CTest)
 enable_testing()
@@ -9,13 +9,16 @@ find_package(FLTK REQUIRED NO_MODULE)
 include_directories(./fltk)
 include_directories(./includes)
 
-add_executable(CVTool WIN32 ./src/main.cpp ./src/main_panel.cxx ./src/render_panel.cxx ./src/ui_controller.cpp)
+add_executable(CVtool WIN32 ./src/main.cpp ./src/main_panel.cxx ./src/render_panel.cxx ./src/ui_controller.cpp)
 
-target_link_libraries(CVTool fltk)
-target_link_libraries(CVTool fltk_gl)
-target_link_libraries(CVTool ws2_32)
+target_link_libraries(CVtool fltk)
+target_link_libraries(CVtool fltk_gl)
 
-#target_link_libraries(CVTool uavv_video)
+if(WIN32)
+    target_link_libraries(CVtool ws2_32)
+endif()
+
+# target_link_libraries(CVTool uavv_video)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
