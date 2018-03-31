@@ -92,7 +92,7 @@ void UIController::InitUIComponents()
     int Y = MAIN_OFFSET_Y;
     mainWnd->resize(X, Y, W, H);
 
-    shared_ptr<RenderWnd> renderTmp(UIController::makeRenderPanel(this, FRAME_WIDTH, FRAME_HEIGHT, "GLFrame"));
+    shared_ptr<RenderWnd> renderTmp(UIController::makeRenderPanel(this, FRAME_WIDTH, FRAME_HEIGHT, "Video playback"));
     renderWnd = std::move(renderTmp);
 
     if ((Fl::w() < renderWnd->w()) || (Fl::h() < renderWnd->h()))
