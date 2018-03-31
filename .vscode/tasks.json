@@ -7,7 +7,7 @@
       "label": "build debug main",
       "type": "shell",
       "command": "g++",
-      "windows":{
+      "windows": {
         "args": [
           "-g",
           "-O0",
@@ -42,9 +42,9 @@
           "-DUSE_OPENGL32",
           "-D_LARGEFILE_SOURCE",
           "-D_LARGEFILE64_SOURCE"
-        ],
+        ]
       },
-      "linux":{
+      "linux": {
         "args": [
           "-g",
           "-O0",
@@ -82,7 +82,47 @@
           "-D_LARGEFILE64_SOURCE"
         ]
       },
-      
+      "osx": {
+        "args": [
+          "-g",
+          "-O0",
+          "-Wall",
+          "-Wunused",
+          "-Wno-format-y2k",
+          "-Wc++11-extensions",
+          "-fno-exceptions",
+          "-fno-strict-aliasing",
+          "-ffunction-sections",
+          "-fdata-sections",
+          "./src/main.cpp",
+          "./src/main_panel.cxx",
+          "./src/render_panel.cxx",
+          "./src/ui_controller.cpp",
+          "-I\"./includes\"",
+          "-I\"./fltk/\"",
+          "-o",
+          "./build/CVtool",
+          "-L\"./fltk/lib\"",
+          "-L\".\"",
+          "-lfltk",
+          "-lfltk_gl",
+          "-framework",
+          "OpenGL",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "AppKit",
+          "-lobjc",
+          "-ldl",
+          "-DUSE_OPENGL32",
+          "-D_LARGEFILE_SOURCE",
+          "-D_LARGEFILE64_SOURCE"
+        ]
+      },
       "group": {
         "kind": "build",
         "isDefault": true
@@ -92,14 +132,14 @@
         "panel": "dedicated"
       },
       "problemMatcher": [
-        "$gcc"
+        "$msCompile"
       ]
     },
     {
       "label": "build release main",
       "type": "shell",
       "command": "g++",
-      "windows":{
+      "windows": {
         "args": [
           "-O3",
           "-Wall",
@@ -136,7 +176,7 @@
           "-D_LARGEFILE64_SOURCE"
         ]
       },
-      "linux":{
+      "linux": {
         "args": [
           "-O3",
           "-Wall",
@@ -174,6 +214,46 @@
           "-D_LARGEFILE64_SOURCE"
         ]
       },
+      "osx": {
+        "args": [
+          "-O3",
+          "-Wall",
+          "-Wunused",
+          "-Wno-format-y2k",
+          "-fno-exceptions",
+          "-fno-strict-aliasing",
+          "-ffunction-sections",
+          "-fdata-sections",
+          "./src/main.cpp",
+          "./src/main_panel.cxx",
+          "./src/render_panel.cxx",
+          "./src/ui_controller.cpp",
+          "-I\"./includes\"",
+          "-I\"./fltk/\"",
+          "-o",
+          "./build/CVtool",
+          "-L\"./fltk/lib\"",
+          "-L\".\"",
+          "-lfltk",
+          "-lfltk_gl",
+          "-framework",
+          "OpenGL",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-framework",
+          "AppKit",
+          "-lobjc",
+          "-ldl",
+          "-DNDEBUG",
+          "-DUSE_OPENGL32",
+          "-D_LARGEFILE_SOURCE",
+          "-D_LARGEFILE64_SOURCE"
+        ]
+      },
       "group": {
         "kind": "build",
         "isDefault": true
@@ -181,10 +261,7 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"
-      },
-      "problemMatcher": [
-        "$gcc"
-      ]
+      }
     }
   ]
 }

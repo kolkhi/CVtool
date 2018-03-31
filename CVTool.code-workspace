@@ -14,6 +14,7 @@
 		"cmake.mingwSearchDirs": [
 			"F:\\Development\\mingw-w64"
 		],
-		"cmake.useCMakeServer": false
+		"cmake.useCMakeServer": false,
+		"editor.cursorBlinking": "solid"
 	}
 }

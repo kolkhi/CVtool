@@ -18,6 +18,14 @@ if(WIN32)
     target_link_libraries(CVtool ws2_32)
 endif()
 
+if(APPLE)
+    target_link_libraries(CVtool objc)
+    target_link_libraries(CVtool "-framework CoreFoundation")
+    target_link_libraries(CVtool "-framework CoreGraphics")
+    target_link_libraries(CVtool "-framework CoreText")
+    target_link_libraries(CVtool "-framework AppKit")
+endif()
+
 # target_link_libraries(CVTool uavv_video)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
