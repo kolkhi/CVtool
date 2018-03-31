@@ -37,8 +37,6 @@ namespace cvtool
   };
 }
 
-extern cvtool::MainWnd *main_panel;
-
 #endif
 
 //

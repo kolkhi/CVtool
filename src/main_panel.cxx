@@ -35,8 +35,6 @@ extern Fl_Preferences fluid_prefs;
 
 using namespace cvtool;
 
-MainWnd *main_panel=(MainWnd *)0;
-
 MainWnd::MainWnd(int X, int Y, int W, int H, const char* l) :
   Fl_Double_Window(X, Y, W, H, l)
 {

@@ -39,8 +39,6 @@ using namespace cvtool;
  Window for rendering
 */
 
-RenderWnd *render_panel=(RenderWnd *)0;
-
 RenderWnd::RenderWnd(int W, int H, const char* l) :    
             Fl_Gl_Window(W, H, l)//, mpFrame(nullptr)
 {

@@ -57,7 +57,6 @@ namespace cvtool
     };
 }
 
-extern cvtool::RenderWnd *render_panel;
 #endif
 
 //
