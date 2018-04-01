@@ -6,6 +6,7 @@
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Slider.H>
 #include <FL/fl_ask.H>
+#include <video_player.h>
 
 using namespace std;
 using namespace cvtool;
@@ -67,9 +68,12 @@ static Fl_Image *image_toggle() {
     return image;
 }
   
+
 UIController::UIController() 
     : mainWnd(nullptr)
     , renderWnd(nullptr)
+    , videoPlayer(nullptr)
+    , imageFrameBuffer(nullptr)
     , renderWndVisible(1)
 {
 
@@ -77,7 +81,12 @@ UIController::UIController()
 
 UIController::~UIController()
 {
+#if TODO
+    uavv_image_destroy(imageFrameBuffer);
+#endif
 
+    uint8_t* tmp = static_cast<uint8_t*>(imageFrameBuffer);
+    delete [] tmp;
 }
 
 void UIController::InitUIComponents()
@@ -128,8 +137,22 @@ void UIController::ShowMainWindow(int argc, char *argv[])
         renderWnd->show();
 }
 
-    
-/**/ UIController* UIController::CreateInstance()
+void UIController::SetupGLWindowUpdateTest()
+{
+#if TODO
+    CreateGLFrameBufferTest();
+    Fl::add_timeout(0, UIController::OnRenderTimeoutElapsed, static_cast<void*>(this));
+#endif
+}    
+
+void UIController::SetupVideoPlayer()
+{
+    shared_ptr<VideoPlayer> tmpPlayer(new VideoPlayer());
+    videoPlayer = std::move(tmpPlayer);
+    videoPlayer->SetImageDecodingCallback(UIController::ImageDecoding, static_cast<void*>(this));
+}
+
+/*static*/ UIController* UIController::CreateInstance()
 {
     return new UIController();
 }
@@ -141,6 +164,8 @@ void UIController::ShowMainWindow(int argc, char *argv[])
     Fl::lock();
 
     uiController->InitUIComponents();
+    uiController->SetupGLWindowUpdateTest();
+    uiController->SetupVideoPlayer();
     uiController->ShowMainWindow(argc,argv);
     
     // Let FLTK run
@@ -148,7 +173,6 @@ void UIController::ShowMainWindow(int argc, char *argv[])
 
     // Clean up
     Fl::unlock();
-    //uavv_image_destroy(buf);
 
     return res;
 }
@@ -234,7 +258,7 @@ void UIController::ToggleRender()
 
 void UIController::FirstFrameClick()
 {
-    fl_message("Go to start");
+    videoPlayer->GoToStart();
 }
 
 /*static*/ void UIController::OnFirstFrameClick(Fl_Widget*, void* pUserData)
@@ -251,7 +275,7 @@ void UIController::FirstFrameClick()
 
 void UIController::PreviousFrameClick()
 {
-    fl_message("Step backward");
+    videoPlayer->StepBackward();
 }
 
 /*static*/ void UIController::OnPreviousFrameClick(Fl_Widget*, void* pUserData)
@@ -268,7 +292,7 @@ void UIController::PreviousFrameClick()
 
 void UIController::PlayClick()
 {
-    fl_message("Play video");
+    videoPlayer->Play();
     playBtn->hide();
     pauseBtn->show();
 }
@@ -287,7 +311,7 @@ void UIController::PlayClick()
 
 void UIController::PauseClick()
 {
-    fl_message("Pause video playback");
+    videoPlayer->Pause();
     playBtn->show();
     pauseBtn->hide();
 }
@@ -306,7 +330,7 @@ void UIController::PauseClick()
 
 void UIController::StopClick()
 {
-    fl_message("Stop video playback");
+    videoPlayer->Stop();
     playBtn->show();
     pauseBtn->hide();
 }
@@ -325,7 +349,7 @@ void UIController::StopClick()
 
 void UIController::NextFrameClick()
 {
-    fl_message("Step forward");
+    videoPlayer->StepForward();
 }
 
 /*static*/ void UIController::OnNextFrameClick(Fl_Widget*, void* pUserData)
@@ -342,7 +366,7 @@ void UIController::NextFrameClick()
 
 void UIController::LastFrameClick()
 {
-    fl_message("Go to end");
+    videoPlayer->GoToEnd();
 }
 
 /*static*/ void UIController::OnLastFrameClick(Fl_Widget*, void* pUserData)
@@ -357,6 +381,24 @@ void UIController::LastFrameClick()
     controller->LastFrameClick();
 }
 
+void UIController::SliderPosChange(double pos)
+{
+    videoPlayer->GoTo(pos);
+}
+
+/*static*/ void UIController::OnSliderPosChange(Fl_Widget* widget, void* pUserData)
+{
+    assert(pUserData);
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    Fl_Slider* slider = static_cast<Fl_Slider*>(widget);
+    controller->SliderPosChange(slider->value());
+}
+
 /*static*/ MainWnd* UIController::makeMainPanel(UIController* controller) 
 {  
     MainWnd* main_panel = nullptr;
@@ -369,7 +411,7 @@ void UIController::LastFrameClick()
         main_panel->labelfont(0);
         main_panel->labelsize(14);
         main_panel->labelcolor(FL_FOREGROUND_COLOR);
-        main_panel->callback(UIController::OnCloseMainWnd, (void*)controller);
+        main_panel->callback(UIController::OnCloseMainWnd, static_cast<void*>(controller));
         main_panel->align(Fl_Align(FL_ALIGN_CENTER));
         main_panel->when(FL_WHEN_RELEASE);
         { 
@@ -389,52 +431,52 @@ void UIController::LastFrameClick()
             firstFrameBtn = new Fl_Button(25, 125, 40, 40);
             firstFrameBtn->image( image_first_b() );
             firstFrameBtn->align(Fl_Align(512));
-            firstFrameBtn->callback(UIController::OnFirstFrameClick, (void*)controller);
+            firstFrameBtn->callback(UIController::OnFirstFrameClick, static_cast<void*>(controller));
         } // Fl_Button* firstFrameBtn
         { 
             prevFrameBtn = new Fl_Button(80, 125, 40, 40);
             prevFrameBtn->image( image_prev_b() );
             prevFrameBtn->align(Fl_Align(512));
-            prevFrameBtn->callback(UIController::OnPreviousFrameClick, (void*)controller);
+            prevFrameBtn->callback(UIController::OnPreviousFrameClick, static_cast<void*>(controller));
         } // Fl_Button* prevFrameBtn
         { 
             playBtn = new Fl_Button(135, 125, 40, 40);
             playBtn->image( image_play_b() );
             playBtn->align(Fl_Align(512));
-            playBtn->callback(UIController::OnPlayClick, (void*)controller);
+            playBtn->callback(UIController::OnPlayClick, static_cast<void*>(controller));
         } // Fl_Button* playBtn
         { 
             stopBtn = new Fl_Button(190, 125, 40, 40);
             stopBtn->image( image_stop_b() );
             stopBtn->align(Fl_Align(512));
-            stopBtn->callback(UIController::OnStopClick, (void*)controller);
+            stopBtn->callback(UIController::OnStopClick, static_cast<void*>(controller));
         } // Fl_Button* stopBtn
         { 
             nextFrameBtn = new Fl_Button(245, 125, 40, 40);
             nextFrameBtn->image( image_next_b() );
             nextFrameBtn->align(Fl_Align(512));
-            nextFrameBtn->callback(UIController::OnNextFrameClick, (void*)controller);
+            nextFrameBtn->callback(UIController::OnNextFrameClick, static_cast<void*>(controller));
         } // Fl_Button*nextFrameBtn
         { 
             lastFrameBtn = new Fl_Button(300, 125, 40, 40);
             lastFrameBtn->image( image_last_b() );
             lastFrameBtn->align(Fl_Align(512));
-            lastFrameBtn->callback(UIController::OnLastFrameClick, (void*)controller);
+            lastFrameBtn->callback(UIController::OnLastFrameClick, static_cast<void*>(controller));
         } // Fl_Button* lastFrameBtn
         { 
             pauseBtn = new Fl_Button(135, 125, 40, 40);
             pauseBtn->image( image_pause_b() );
             pauseBtn->hide();
-            pauseBtn->callback(UIController::OnPauseClick, (void*)controller);
+            pauseBtn->callback(UIController::OnPauseClick, static_cast<void*>(controller));
         } // Fl_Button* pauseBtn
 
         { 
             playTrackbar = new Fl_Slider(25, 75, 490, 27);
             playTrackbar->type(5);
             playTrackbar->box(FL_FLAT_BOX);
-            playTrackbar->maximum(100);
-            playTrackbar->step(1);
-            playTrackbar->callback(UIController::OnSliderPosChange, (void*)controller);
+            playTrackbar->maximum(100.0);
+            playTrackbar->step(0.01);
+            playTrackbar->callback(UIController::OnSliderPosChange, static_cast<void*>(controller));
         } // Fl_Slider* playTrackbar
         
         { 
@@ -445,7 +487,7 @@ void UIController::LastFrameClick()
             toggleVideoWnd->image( image_toggle() );
             toggleVideoWnd->align(Fl_Align(512));
             toggleVideoWnd->value(controller->IsVideoRenderVisible() ? 1 : 0);
-            toggleVideoWnd->callback(UIController::OnToggleRender, (void*)controller);
+            toggleVideoWnd->callback(UIController::OnToggleRender, static_cast<void*>(controller));
             toggleVideoWnd->tooltip("Show/Hide playback window");
         } // Fl_Button* toggleVideoWnd
 
@@ -471,7 +513,7 @@ void UIController::LastFrameClick()
         o->labelsize(14);
         o->labelcolor(FL_FOREGROUND_COLOR);
         o->when(FL_WHEN_RELEASE);
-        o->callback(UIController::OnToggleRender, (void*)controller);
+        o->callback(UIController::OnToggleRender, static_cast<void*>(controller));
         o->set_non_modal();
         o->end();
         o->resizable(o);
@@ -479,7 +521,7 @@ void UIController::LastFrameClick()
     return w;
 }
 
-void UIController::ExitApplicaion()
+void UIController::ExitApplication()
 {
     if(renderWnd->shown())
         renderWnd->hide();
@@ -496,15 +538,72 @@ void UIController::ExitApplicaion()
         return;
     }
 
-    controller->ExitApplicaion();
+    controller->ExitApplication();
 }
 
-void UIController::SliderPosChange(int pos)
+void UIController::draw_bresenham_line(UAVV_IMAGE buf, int x1, int y1, int x2, int y2)
 {
-    fl_message("Slider pos changed %d", pos);
+#if TODO
+    uint8_t* data = (uint8_t*) uavv_image_data(buf);
+#endif
+    uint8_t* data = static_cast<uint8_t*>(buf);
+    int dx = abs(x2 - x1);
+    int dy = -abs(y2 - y1);
+    int sx = (x1 < x2) ? 1 : -1;
+    int sy = (y1 < y2) ? 1 : -1;
+    int err = dx + dy;
+    int e2;
+    for (;;)
+    {
+        // This sets the pixel red.
+    #if TODO
+        *(data + 4*x1 + 4*uavv_image_width(buf)*y1) = 255;      // R
+        *(data + 4*x1 + 4*uavv_image_width(buf)*y1 + 1) = 0;    // G
+        *(data + 4*x1 + 4*uavv_image_width(buf)*y1 + 2) = 0;    // B
+        *(data + 4*x1 + 4*uavv_image_width(buf)*y1 + 3) = 255;  // A
+    #endif
+
+        if ((x1 == x2) && (y1 == y2))  break;
+        e2 = 2 * err;
+        if (e2 <= dx)
+        {
+            err += dx;
+            y1  += sy;
+        }
+        if (e2 >= dy)
+        {
+            err += dy;
+            x1  += sx;
+        }
+    }
 }
 
-/*static*/ void UIController::OnSliderPosChange(Fl_Widget* widget, void* pUserData)
+UAVV_IMAGE UIController::CreateGLFrameBufferTest()
+{
+    // Create an empty canvas
+#if TODO
+    imageFrameBuffer = uavv_image_create(FRAME_WIDTH, FRAME_HEIGHT);
+    memset(uavv_image_data(imageFrameBuffer), 200, uavv_image_length(imageFrameBuffer));
+#endif
+    uint8_t* temp = new uint8_t[FRAME_WIDTH * FRAME_HEIGHT];
+    memset(temp, 200, FRAME_WIDTH * FRAME_HEIGHT);
+
+    imageFrameBuffer = static_cast<void*>(temp);
+
+    draw_bresenham_line(imageFrameBuffer, 0, 0, FRAME_WIDTH-1, FRAME_HEIGHT-1);
+    draw_bresenham_line(imageFrameBuffer, FRAME_WIDTH-1, 0, 0, FRAME_HEIGHT-1);
+
+    return imageFrameBuffer;
+}
+
+void UIController::UpdateGLFrameBufferTest()
+{
+    const UAVV_IMAGE buf = static_cast<const UAVV_IMAGE>(imageFrameBuffer);
+    renderWnd->UpdateGLFrame(buf);
+    Fl::repeat_timeout(1, UIController::OnRenderTimeoutElapsed, static_cast<void*>(this));
+}
+
+/*static*/ void UIController::OnRenderTimeoutElapsed(void* pUserData)
 {
     assert(pUserData);
     UIController* controller = static_cast<UIController*>(pUserData); 
@@ -513,7 +612,21 @@ void UIController::SliderPosChange(int pos)
         return;
     }
 
-    Fl_Slider* slider = static_cast<Fl_Slider*>(widget);
-    controller->SliderPosChange(slider->value());
+    controller->UpdateGLFrameBufferTest();
 }
 
+void UIController::ImageBufferReceived(UAVV_IMAGE img, int delay, float pos)
+{
+    renderWnd->UpdateGLFrame(img);
+}
+
+/*static*/ void UIController::ImageDecoding(UAVV_IMAGE img, int delay, float pos, void* pUserData)
+{
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->ImageBufferReceived(img, delay, pos);
+}

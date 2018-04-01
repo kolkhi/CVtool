@@ -5,11 +5,14 @@
 #include <memory>
 #include <main_panel.h>
 #include <render_panel.h>
+#include <uavv_image.h>
 
 using namespace std;
 
 namespace cvtool
 {
+    class VideoPlayer;
+
     class UIController
     {
         const int MAIN_OFFSET_Y = 100; 
@@ -17,7 +20,11 @@ namespace cvtool
 
         shared_ptr<MainWnd> mainWnd;
         shared_ptr<RenderWnd> renderWnd;
+        shared_ptr<VideoPlayer> videoPlayer;
+
+        UAVV_IMAGE imageFrameBuffer;
         bool renderWndVisible;
+        
         
         protected:
             static MainWnd* makeMainPanel(UIController* controller);
@@ -27,6 +34,8 @@ namespace cvtool
 
             UIController();
 
+            UAVV_IMAGE CreateGLFrameBufferTest();
+            void draw_bresenham_line(UAVV_IMAGE buf, int x1, int y1, int x2, int y2);
         public:
         
             ~UIController();
@@ -35,7 +44,9 @@ namespace cvtool
             void InitUIComponents();
             void ShowMainWindow(int argc, char *argv[]);
             bool IsVideoRenderVisible() const;
-
+            void SetupGLWindowUpdateTest();
+            void SetupVideoPlayer();
+            
             // button click handlers
             void ToggleRender();
             void FirstFrameClick();
@@ -45,16 +56,17 @@ namespace cvtool
             void StopClick();
             void NextFrameClick();
             void LastFrameClick();
-            void SliderPosChange(int pos);
+            void SliderPosChange(double pos);
 
-            void ExitApplicaion();
+            void ExitApplication();
+            void UpdateGLFrameBufferTest();
+            void ImageBufferReceived(UAVV_IMAGE img, int delay, float pos);
             
             static UIController* CreateInstance();
 
             static int RunApplication(int argc, char *argv[]);
             static void SetupSystemSettings();
 
-            
             // widget event static handlers
             static void OnPickFile(Fl_Widget*, void*);
             static void OnToggleRender(Fl_Widget*, void*);
@@ -67,6 +79,10 @@ namespace cvtool
             static void OnLastFrameClick(Fl_Widget*, void*);
             static void OnCloseMainWnd(Fl_Widget*, void*);
             static void OnSliderPosChange(Fl_Widget*, void*);
+            static void OnRenderTimeoutElapsed(void*);
+
+            // video player callbacks 
+            static void ImageDecoding(UAVV_IMAGE img, int delay, float pos, void* pUserData);
     };
 }
 

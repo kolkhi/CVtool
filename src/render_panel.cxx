@@ -46,20 +46,22 @@ RenderWnd::RenderWnd(int W, int H, const char* l) :
     resizable(this);
 }
 
-/*
-void RenderWnd::updateFrame(const UAVV_IMAGE buf)
+
+void RenderWnd::UpdateGLFrame(const UAVV_IMAGE buf)
 {
     // Keep a reference to the frame buffer
     if (!buf) 
       return;
     
+#if TODO 
     uavv_image_destroy(mpFrame);
     mpFrame = uavv_image_copy(buf);
+#endif
 
     // Schedule a redraw
     redraw();
 }
-*/
+
 
 void RenderWnd::draw()
 {
@@ -67,30 +69,43 @@ void RenderWnd::draw()
       ortho();
 
     // Update GL frame
-    /*if (mpFrame)
+#if TODO
+    if (mpFrame)
     {
         mGlFrame.copy(mpFrame);
         uavv_image_destroy(mpFrame);
         mpFrame = NULL;
-    }*/
+    }
+#endif
 
     glClearColor(0.5, 0.5, 0.5, 0.5);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //if (!mGlFrame.isValid())  return;
+#if TODO
+    if (!mGlFrame.isValid())  return;
+#endif
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
     // Fit GL frame to window
-    float scale_x = w();// / (float)mGlFrame.width();
-    float scale_y = h();// / (float)mGlFrame.height();
+    float scale_x = w();
+    float scale_y = h();
+
+#if TODO
+    scale_x = (float)mGlFrame.width();
+    scale_y = (float)mGlFrame.height();
+#endif
+    
     glPushMatrix();
     glScalef(scale_x, scale_y, 1.0);
-    //mGlFrame.draw();
-    glPopMatrix();
 
+#if TODO
+    mGlFrame.draw();
+#endif
+
+    glPopMatrix();
     glDisable(GL_BLEND);
 }
 

@@ -53,7 +53,7 @@ namespace cvtool
 
     public:
         RenderWnd(int W, int H, const char* l = 0);
-        //void updateFrame(const UAVV_IMAGE buf);
+        void UpdateGLFrame(const UAVV_IMAGE buf);
     };
 }
 
