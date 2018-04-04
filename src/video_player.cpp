@@ -3,6 +3,7 @@
 #include <signal.h>
 
 using namespace cvtool;
+using namespace uavv;
 
 
 #include "uavv_video.h"
@@ -15,99 +16,234 @@ using namespace cvtool;
 #define IMAGE_DUMP      "image.rgba"
 #define KLV_DUMP        "klv.txt"
 
-volatile int VideoPlayer::cancelDecoding = 0;
-
 VideoPlayer::VideoPlayer()
-    : uavvHandler(nullptr)
+    : cancelDecoding(0)
+    , uavvHandler(nullptr)
     , isPaused(false)
     , isDecoding(false)
+    , pfnImageCallback(nullptr)
+    , pUserData(nullptr)
 {
 
 } 
     
 VideoPlayer::~VideoPlayer()
 {
-
+    IUAVVInterface::UnloadLibrary();
 }
 
-void VideoPlayer::InitPlayback(const std::string& file)
+/*static*/ bool VideoPlayer::InitUAVVLibrary()
 {
-    if(sourceFile == file)
-        return;
+    if(!IUAVVInterface::LoadAndInitLibrary())
+    {
+        return false;
+    }
+    
+    std::string currentDir(LICENSE_DIR);
+    IUAVVInterface::SetLicenseDirectory(currentDir);
+    return true;
+}
+
+/*static*/ std::string VideoPlayer::GetUAVVVersion()
+{
+    return IUAVVInterface::GetLibraryVersion();
+}
+
+bool VideoPlayer::InitPlayback(const std::string& file)
+{
+    if(sourceFile.length() == 0)
+    {
+        fl_message("Source path is empty.");
+        return false;
+    }
 
     ResetPlayer();
 
-#if TODO
-    // Setup licensing
-    uavv_video_set_license_directory(LICENSE_DIR);
-
-    // Create video decoder and setup callback functions
-    uavvHandler = uavv_video_create(sourceFile.c_str());
-    
+    uavvHandler = IUAVVInterface::CreateVideoHandle(file);
     if (!uavvHandler)
     {
-        printf("Library needs to be activated\n");
-        return EXIT_FAILURE;
+        fl_message("Library needs to be activated.");
+        return false;
     }
 
-    uavv_video_set_abort_hook(uavvHandler, VideoPlayer::abort_cb, nullptr);
-    uavv_video_set_image_hook(uavvHandler, pfnImageCallback, pUserData);
+    IUAVVInterface::SetAbortCallback(uavvHandler, VideoPlayer::abort_cb, static_cast<UAVV_USER_DATA>(this));
+    IUAVVInterface::SetImageDecodeCallback(uavvHandler, pfnImageCallback, pUserData);
+    return true;
+}
 
-#endif
+void VideoPlayer::SetVideoSource(std::string& filePath)
+{
+    sourceFile = filePath;
 }
 
 void VideoPlayer::ResetPlayer()
 {
-
+    StopDecoding();
 }
 
 void VideoPlayer::Play()
 {
-    fl_message("Play video");
+    if(isPaused)
+    {
+        isPaused = false;
+    }
+    else
+    {
+        if(!InitPlayback(sourceFile))
+            return;
+
+        StartDecoding();
+    }
+
+    //fl_message("Play video");
 }
     
 void VideoPlayer::Stop()
 {
-    fl_message("Stop video playback");
+    StopDecoding();
+    //fl_message("Stop video playback");
 }
     
 void VideoPlayer::Pause()
 {
-    fl_message("Pause video playback");
+    PauseDecoding();
+    //fl_message("Pause video playback");
 }
     
-void VideoPlayer::GoToStart()
+bool VideoPlayer::GoToStart()
 {
-    fl_message("Go to start");
+    return GoTo(0.0);
+    //fl_message("Go to start");
 }
     
-void VideoPlayer::GoToEnd()
+bool VideoPlayer::GoToEnd()
 {
-    fl_message("Go to end");
+    return GoTo(100.0);
+    //fl_message("Go to end");
 }
     
-void VideoPlayer::StepBackward()
+bool VideoPlayer::StepBackward(double curPos)
 {
-    fl_message("Step backward");
+    double newPos = curPos - 0.1;
+    if(newPos < 0)
+        newPos = 0;
+        
+    return GoTo(newPos);
 }
 
-void VideoPlayer::StepForward()
+bool VideoPlayer::StepForward(double curPos)
 {
-    fl_message("Step forward");
+    double newPos = curPos + 0.1;
+    if(newPos > 100.0)
+        newPos = 100.0;
+    
+    return GoTo(newPos);
 }
 
-void VideoPlayer::GoTo(double pos)
+bool VideoPlayer::GoTo(double pos)
 {
-    fl_message("Slider pos changed %.2f", pos);
+    return MoveToPos(pos);
 }
 
-/*static*/ int VideoPlayer::abort_cb(void* v)
+int VideoPlayer::IsDecodingCancelled()
 {
     return cancelDecoding;
 }
 
-void VideoPlayer::SetImageDecodingCallback(fnImageCallback callback, void* userData)
+/*static*/ int VideoPlayer::abort_cb(USER_DATA v)
+{
+    VideoPlayer* player = static_cast<VideoPlayer*>(v);
+    if(!player)
+        return 0;
+
+    return player->IsDecodingCancelled();
+}
+
+void VideoPlayer::SetImageDecodingCallback(fnImageCallback callback, USER_DATA userData)
 {
     pfnImageCallback = callback;
     pUserData = userData;
+}
+
+bool VideoPlayer::IsPlaying()
+{
+    return isDecoding && !isPaused;
+}
+
+bool VideoPlayer::IsDecodeInitialized()
+{
+    return (uavvHandler != nullptr);
+}
+
+void VideoPlayer::StartDecoding()
+{
+    if(!IsDecodeInitialized())
+    {
+        fl_message("Decoder is not initialized.");
+        return;
+    }
+
+    if(!isDecoding)
+    { 
+        isDecoding = true;
+        decodingThread = std::thread([this]()
+        {
+            while(!IsDecodingCancelled())
+            {
+                if(isPaused)
+                    continue;
+
+                IUAVVInterface::DecodeVideo(uavvHandler, TIMEOUT_MS);
+            }
+
+            isDecoding = false;
+            ResetCancelState();
+        });
+    }
+}
+
+void VideoPlayer::StopDecoding()
+{
+    cancelDecoding = 1;  
+    if(decodingThread.joinable())
+        decodingThread.join();
+
+    IUAVVInterface::DestroyVideoHandle(uavvHandler);
+    ResetCancelState();
+    uavvHandler = nullptr;
+    isPaused = false;
+}
+    
+void VideoPlayer::ResetCancelState()
+{
+    cancelDecoding = 0;
+}
+
+void VideoPlayer::PauseDecoding()
+{
+    isPaused = true;
+}
+    
+bool VideoPlayer::MoveToPos(double pos)
+{
+    if(!IsDecodeInitialized())
+        return false;
+
+    // can't move to position for streaming video
+    if(IsVideoStreaming())
+        return false;
+
+    if(isDecoding)
+    {
+        isPaused = true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+
+    IUAVVInterface::GoToPosition(uavvHandler, static_cast<float>(pos));
+    return true;
+}
+
+bool VideoPlayer::IsVideoStreaming()
+{
+    return (IUAVVInterface::IsStreamingVideo(uavvHandler) != 0);
 }

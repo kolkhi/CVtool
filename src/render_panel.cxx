@@ -26,6 +26,8 @@
 #include <FL/fl_ask.H>
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_Preferences.H>
+#include <uavv_wrapper.h>
+
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <io.h>
 #else
@@ -34,13 +36,14 @@
 extern Fl_Preferences fluid_prefs;
 
 using namespace cvtool;
+using namespace uavv;
 
 /**
  Window for rendering
 */
 
 RenderWnd::RenderWnd(int W, int H, const char* l) :    
-            Fl_Gl_Window(W, H, l)//, mpFrame(nullptr)
+            Fl_Gl_Window(W, H, l), mpFrame(nullptr)
 {
     mode(FL_DOUBLE);
     resizable(this);
@@ -51,13 +54,14 @@ void RenderWnd::UpdateGLFrame(const UAVV_IMAGE buf)
 {
     // Keep a reference to the frame buffer
     if (!buf) 
-      return;
+        return;
     
-#if TODO 
-    uavv_image_destroy(mpFrame);
-    mpFrame = uavv_image_copy(buf);
-#endif
-
+    imageMutex.lock();
+    
+    IUAVVInterface::DestroyImageHandle(mpFrame);
+    mpFrame = IUAVVInterface::CopyImageHandle(buf);
+    
+    imageMutex.unlock();
     // Schedule a redraw
     redraw();
 }
@@ -68,45 +72,44 @@ void RenderWnd::draw()
     if (!valid())  
       ortho();
 
+    
+    imageMutex.lock();
+
     // Update GL frame
-#if TODO
     if (mpFrame)
     {
         mGlFrame.copy(mpFrame);
-        uavv_image_destroy(mpFrame);
-        mpFrame = NULL;
+        IUAVVInterface::DestroyImageHandle(mpFrame);
+        mpFrame = nullptr;
     }
-#endif
 
-    glClearColor(0.5, 0.5, 0.5, 0.5);
+    if (!mGlFrame.isValid())  
+    {
+        imageMutex.unlock();
+        return;
+    }    
+
+    glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-#if TODO
-    if (!mGlFrame.isValid())  return;
-#endif
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
     // Fit GL frame to window
-    float scale_x = w();
-    float scale_y = h();
-
-#if TODO
-    scale_x = (float)mGlFrame.width();
-    scale_y = (float)mGlFrame.height();
-#endif
+    float scale_x = w() / (float)mGlFrame.width();
+    float scale_y = h() / (float)mGlFrame.height();
+    //float scale_x = w();//(float)mGlFrame.width();
+    //float scale_y = h();//(float)mGlFrame.height();
     
     glPushMatrix();
     glScalef(scale_x, scale_y, 1.0);
 
-#if TODO
     mGlFrame.draw();
-#endif
 
     glPopMatrix();
     glDisable(GL_BLEND);
+    imageMutex.unlock();
 }
 
 //

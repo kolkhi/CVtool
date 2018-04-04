@@ -17,7 +17,7 @@
                 "miDebuggerPath": "gdb"
             },
             "args": [],
-            "stopAtEntry": true,
+            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,

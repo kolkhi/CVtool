@@ -23,11 +23,17 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Input.H>
+#include <FL/Fl_Button.H>
+#include <FL/Fl_Slider.H>
+#include <FL/fl_ask.H>
+#include <Fl/Fl_Box.H>
 
 
 /**
  Main window class
 */
+
 namespace cvtool
 {
   class MainWnd : public Fl_Double_Window 

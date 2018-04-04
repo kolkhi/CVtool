@@ -6,7 +6,9 @@
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Slider.H>
 #include <FL/fl_ask.H>
+#include <Fl/Fl_Box.H>
 #include <video_player.h>
+#include <chrono>
 
 using namespace std;
 using namespace cvtool;
@@ -81,12 +83,24 @@ UIController::UIController()
 
 UIController::~UIController()
 {
-#if TODO
-    uavv_image_destroy(imageFrameBuffer);
-#endif
 
+    uavv::IUAVVInterface::DestroyImageHandle(imageFrameBuffer);
     uint8_t* tmp = static_cast<uint8_t*>(imageFrameBuffer);
     delete [] tmp;
+
+    videoPlayer->Stop();
+}
+
+bool UIController::InitUAVVLibrary()
+{
+    if(!VideoPlayer::InitUAVVLibrary())
+    {
+        fl_message("Couldn't load or initialize UAVV library.");
+        return false;
+    }
+    
+    uavvVer = std::string("UAVV ver ") + VideoPlayer::GetUAVVVersion();
+    return true;
 }
 
 void UIController::InitUIComponents()
@@ -139,10 +153,8 @@ void UIController::ShowMainWindow(int argc, char *argv[])
 
 void UIController::SetupGLWindowUpdateTest()
 {
-#if TODO
     CreateGLFrameBufferTest();
     Fl::add_timeout(0, UIController::OnRenderTimeoutElapsed, static_cast<void*>(this));
-#endif
 }    
 
 void UIController::SetupVideoPlayer()
@@ -161,10 +173,13 @@ void UIController::SetupVideoPlayer()
 {
     unique_ptr<UIController> uiController(UIController::CreateInstance());
     
+    if(!uiController->InitUAVVLibrary())
+        return 0;
+
     Fl::lock();
 
     uiController->InitUIComponents();
-    uiController->SetupGLWindowUpdateTest();
+    //uiController->SetupGLWindowUpdateTest();
     uiController->SetupVideoPlayer();
     uiController->ShowMainWindow(argc,argv);
     
@@ -184,7 +199,7 @@ void UIController::SetupVideoPlayer()
    
     Fl::scheme("gtk+");
     Fl::get_system_colors();
-    Fl::visual(FL_RGB);
+    //Fl::visual(FL_RGB);
 }
 
 
@@ -237,6 +252,11 @@ void UIController::UpdateRenderVisibility()
         renderWnd->hide();
 }
 
+const std::string& UIController::GetLibraryVersionString()
+{
+    return uavvVer;
+}
+
 void UIController::ToggleRender()
 {
     renderWndVisible = !renderWndVisible;
@@ -258,7 +278,12 @@ void UIController::ToggleRender()
 
 void UIController::FirstFrameClick()
 {
-    videoPlayer->GoToStart();
+    if(videoPlayer->GoToStart())
+    {
+        playBtn->show();
+        pauseBtn->hide();
+        playTrackbar->value(0.0);
+    }    
 }
 
 /*static*/ void UIController::OnFirstFrameClick(Fl_Widget*, void* pUserData)
@@ -275,7 +300,12 @@ void UIController::FirstFrameClick()
 
 void UIController::PreviousFrameClick()
 {
-    videoPlayer->StepBackward();
+    if(videoPlayer->StepBackward(playTrackbar->value()))
+    {
+        playBtn->show();
+        pauseBtn->hide();
+        playTrackbar->value(playTrackbar->value() - 0.1);
+    }   
 }
 
 /*static*/ void UIController::OnPreviousFrameClick(Fl_Widget*, void* pUserData)
@@ -292,9 +322,14 @@ void UIController::PreviousFrameClick()
 
 void UIController::PlayClick()
 {
+    std::string fileSource(fileNameEdit->value());
+    videoPlayer->SetVideoSource(fileSource);
     videoPlayer->Play();
-    playBtn->hide();
-    pauseBtn->show();
+    if(videoPlayer->IsPlaying())
+    {
+        playBtn->hide();
+        pauseBtn->show();
+    }
 }
 
 /*static*/ void UIController::OnPlayClick(Fl_Widget*, void* pUserData)
@@ -333,6 +368,7 @@ void UIController::StopClick()
     videoPlayer->Stop();
     playBtn->show();
     pauseBtn->hide();
+    playTrackbar->value(0);
 }
 
 /*static*/ void UIController::OnStopClick(Fl_Widget*, void* pUserData)
@@ -349,7 +385,12 @@ void UIController::StopClick()
 
 void UIController::NextFrameClick()
 {
-    videoPlayer->StepForward();
+    if(videoPlayer->StepForward(playTrackbar->value()))
+    {
+        playBtn->show();
+        pauseBtn->hide();
+        playTrackbar->value(playTrackbar->value() + 0.1);
+    }    
 }
 
 /*static*/ void UIController::OnNextFrameClick(Fl_Widget*, void* pUserData)
@@ -366,7 +407,12 @@ void UIController::NextFrameClick()
 
 void UIController::LastFrameClick()
 {
-    videoPlayer->GoToEnd();
+    if(videoPlayer->GoToEnd())
+    {
+        playBtn->show();
+        pauseBtn->hide();
+        playTrackbar->value(100.0);
+    }    
 }
 
 /*static*/ void UIController::OnLastFrameClick(Fl_Widget*, void* pUserData)
@@ -491,6 +537,13 @@ void UIController::SliderPosChange(double pos)
             toggleVideoWnd->tooltip("Show/Hide playback window");
         } // Fl_Button* toggleVideoWnd
 
+        { 
+            Fl_Box* uavvLibVer = new Fl_Box( FL_FLAT_BOX, 5, 170, 100, 20, controller->GetLibraryVersionString().c_str());
+            uavvLibVer->labeltype(FL_NORMAL_LABEL);
+            uavvLibVer->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
+            uavvLibVer->labelsize(10);
+        } // Fl_Button* toggleVideoWnd
+
         main_panel->set_non_modal();
         main_panel->size_range(540, 190, 540, 190);
         main_panel->end();
@@ -543,10 +596,7 @@ void UIController::ExitApplication()
 
 void UIController::draw_bresenham_line(UAVV_IMAGE buf, int x1, int y1, int x2, int y2)
 {
-#if TODO
-    uint8_t* data = (uint8_t*) uavv_image_data(buf);
-#endif
-    uint8_t* data = static_cast<uint8_t*>(buf);
+    uint8_t* data = (uint8_t*) uavv::IUAVVInterface::GetImageData(buf);
     int dx = abs(x2 - x1);
     int dy = -abs(y2 - y1);
     int sx = (x1 < x2) ? 1 : -1;
@@ -556,12 +606,11 @@ void UIController::draw_bresenham_line(UAVV_IMAGE buf, int x1, int y1, int x2, i
     for (;;)
     {
         // This sets the pixel red.
-    #if TODO
-        *(data + 4*x1 + 4*uavv_image_width(buf)*y1) = 255;      // R
-        *(data + 4*x1 + 4*uavv_image_width(buf)*y1 + 1) = 0;    // G
-        *(data + 4*x1 + 4*uavv_image_width(buf)*y1 + 2) = 0;    // B
-        *(data + 4*x1 + 4*uavv_image_width(buf)*y1 + 3) = 255;  // A
-    #endif
+    
+        *(data + 4*x1 + 4*uavv::IUAVVInterface::GetImageWidth(buf)*y1) = 255;      // R
+        *(data + 4*x1 + 4*uavv::IUAVVInterface::GetImageWidth(buf)*y1 + 1) = 0;    // G
+        *(data + 4*x1 + 4*uavv::IUAVVInterface::GetImageWidth(buf)*y1 + 2) = 0;    // B
+        *(data + 4*x1 + 4*uavv::IUAVVInterface::GetImageWidth(buf)*y1 + 3) = 255;  // A
 
         if ((x1 == x2) && (y1 == y2))  break;
         e2 = 2 * err;
@@ -581,14 +630,8 @@ void UIController::draw_bresenham_line(UAVV_IMAGE buf, int x1, int y1, int x2, i
 UAVV_IMAGE UIController::CreateGLFrameBufferTest()
 {
     // Create an empty canvas
-#if TODO
-    imageFrameBuffer = uavv_image_create(FRAME_WIDTH, FRAME_HEIGHT);
-    memset(uavv_image_data(imageFrameBuffer), 200, uavv_image_length(imageFrameBuffer));
-#endif
-    uint8_t* temp = new uint8_t[FRAME_WIDTH * FRAME_HEIGHT];
-    memset(temp, 200, FRAME_WIDTH * FRAME_HEIGHT);
-
-    imageFrameBuffer = static_cast<void*>(temp);
+    imageFrameBuffer = uavv::IUAVVInterface::CreateImageHandle(FRAME_WIDTH, FRAME_HEIGHT);
+    memset(uavv::IUAVVInterface::GetImageData(imageFrameBuffer), 200, uavv::IUAVVInterface::GetImageLength(imageFrameBuffer));
 
     draw_bresenham_line(imageFrameBuffer, 0, 0, FRAME_WIDTH-1, FRAME_HEIGHT-1);
     draw_bresenham_line(imageFrameBuffer, FRAME_WIDTH-1, 0, 0, FRAME_HEIGHT-1);
@@ -600,7 +643,7 @@ void UIController::UpdateGLFrameBufferTest()
 {
     const UAVV_IMAGE buf = static_cast<const UAVV_IMAGE>(imageFrameBuffer);
     renderWnd->UpdateGLFrame(buf);
-    Fl::repeat_timeout(1, UIController::OnRenderTimeoutElapsed, static_cast<void*>(this));
+    Fl::repeat_timeout(0, UIController::OnRenderTimeoutElapsed, static_cast<void*>(this));
 }
 
 /*static*/ void UIController::OnRenderTimeoutElapsed(void* pUserData)
@@ -618,6 +661,8 @@ void UIController::UpdateGLFrameBufferTest()
 void UIController::ImageBufferReceived(UAVV_IMAGE img, int delay, float pos)
 {
     renderWnd->UpdateGLFrame(img);
+    playTrackbar->value(pos);
+    Fl::awake();
 }
 
 /*static*/ void UIController::ImageDecoding(UAVV_IMAGE img, int delay, float pos, void* pUserData)

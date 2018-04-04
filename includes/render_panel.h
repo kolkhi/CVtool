@@ -29,8 +29,8 @@
 #include <FL/Fl_Gl_Window.H>
 #include <FL/Fl.H>
 #include <FL/gl.h>
-
-//#include "gl_uavv_image.h"
+#include <mutex>
+#include <gl_uavv_image.h>
 
 #define FRAME_WIDTH             800
 #define FRAME_HEIGHT            600
@@ -44,9 +44,10 @@ namespace cvtool
     class RenderWnd : public Fl_Gl_Window 
     {
 
-    /*private:
+    private:
         GLUavvImage mGlFrame;
-        UAVV_IMAGE  mpFrame;*/
+        UAVV_IMAGE  mpFrame;
+        std::mutex  imageMutex;
 
     protected:
         void draw();

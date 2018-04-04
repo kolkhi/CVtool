@@ -1,5 +1,5 @@
 {
-    "name": "GCC 6.3.0",
+    "name": "GCC 7.3.0",
     "compilers": {
       "C": "gcc.exe",
       "CXX": "g++.exe"

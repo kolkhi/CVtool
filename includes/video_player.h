@@ -1,9 +1,10 @@
 #ifndef video_player_h
 #define video_player_h
 
-#include <uavv_video.h>
-#include <uavv_image.h>
+#include <uavv_wrapper.h>
 #include <string>
+#include <atomic>
+#include <thread>
 
 #define LICENSE_DIR     "."
 #define TIMEOUT_MS      60000
@@ -11,41 +12,63 @@
 
 namespace cvtool
 {
-    typedef void (*fnImageCallback) (UAVV_IMAGE img, int delay, float pos, void* pUserData);
+    using fnImageCallback = uavv::fnImageDecodeCallback;
+    using fnCancelCallback = uavv::fnAbortCallback;
+
+    using USER_DATA = uavv::UAVV_USER_DATA;
 
     class VideoPlayer 
     {
-        UAVV_VIDEO uavvHandler;
-        bool isPaused;
-        bool isDecoding;
-        std::string sourceFile;
-        
-        fnImageCallback pfnImageCallback;
-        void* pUserData;
+        private:
+            // class data 
+            volatile int cancelDecoding;
+            UAVV_VIDEO uavvHandler;
+            std::atomic<bool> isPaused;
+            std::atomic<bool> isDecoding;
+            std::string sourceFile;
 
-        static int abort_cb(void* v);
-        
+            fnImageCallback* pfnImageCallback;
+            void* pUserData;
+
+            std::thread decodingThread;
+        private:
+            // private callbacks
+            static int abort_cb(USER_DATA v);
+
+            // video iterface managemange routines
+            void StartDecoding();
+            void StopDecoding();
+            void PauseDecoding();
+            bool MoveToPos(double pos);
+
+            bool InitPlayback(const std::string& file);
+            void ResetPlayer();
+
+            bool IsDecodeInitialized();
+            void ResetCancelState();
+            int IsDecodingCancelled();
+
         public:
             VideoPlayer();
             ~VideoPlayer();
-
-            void InitPlayback(const std::string& file);
-            void ResetPlayer();
             
             void Play();
             void Stop();
             void Pause();
-            void GoToStart();
-            void GoToEnd();
-            void StepBackward();
-            void StepForward();
-            void GoTo(double pos);
+            bool GoToStart();
+            bool GoToEnd();
+            bool StepBackward(double curPos);
+            bool StepForward(double curPos);
+            bool GoTo(double pos);
 
-            void SetImageDecodingCallback(fnImageCallback callback, void* userData);
+            bool IsVideoStreaming();
+            bool IsPlaying();
 
-            static volatile int cancelDecoding;
-            
-            //static void image_cb(UAVV_IMAGE img, int delay, float pos, void* v);
+            void SetImageDecodingCallback(fnImageCallback callback, USER_DATA userData);
+            void SetVideoSource(std::string& filePath);
+
+            static bool InitUAVVLibrary();
+            static std::string GetUAVVVersion();
     };
 }
 

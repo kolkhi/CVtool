@@ -12,7 +12,7 @@
 			"Unix Makefiles"
 		],
 		"cmake.mingwSearchDirs": [
-			"F:\\Development\\mingw-w64"
+			"F:\\Development\\mingw-w64\\x86_64\\mingw64"
 		],
 		"cmake.useCMakeServer": false,
 		"editor.cursorBlinking": "solid",
@@ -39,7 +39,11 @@
 			"streambuf": "cpp",
 			"tuple": "cpp",
 			"type_traits": "cpp",
-			"typeinfo": "cpp"
+			"typeinfo": "cpp",
+			"string_view": "cpp",
+			"thread": "cpp",
+			"atomic": "cpp",
+			"chrono": "cpp"
 		}
 	}
 }

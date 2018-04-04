@@ -24,7 +24,7 @@ namespace cvtool
 
         UAVV_IMAGE imageFrameBuffer;
         bool renderWndVisible;
-        
+        std::string uavvVer;
         
         protected:
             static MainWnd* makeMainPanel(UIController* controller);
@@ -42,10 +42,12 @@ namespace cvtool
 
             // contoller management functions
             void InitUIComponents();
+            bool InitUAVVLibrary();
             void ShowMainWindow(int argc, char *argv[]);
             bool IsVideoRenderVisible() const;
             void SetupGLWindowUpdateTest();
             void SetupVideoPlayer();
+            const std::string& GetLibraryVersionString();
             
             // button click handlers
             void ToggleRender();

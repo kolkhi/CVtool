@@ -56,13 +56,12 @@
                 "${workspaceRoot}/fltk",
                 "${workspaceRoot}/includes",
                 "F:/Development/mingw-w64/include",
-                "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/c++",
-                "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/c++/mingw32",
-                "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/c++/backward",
-                "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include/",
-                "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include",
-                "F:/Development/mingw-w64/include",
-                "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include-fixed"
+                "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++",
+                "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/x86_64-w64-mingw32",
+                "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++/backward",
+                "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include",
+                "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include-fixed",
+                "F:/Development/mingw-w64/x86_64/mingw64/include"
             ],
             "defines": [
                 "_DEBUG",
@@ -76,9 +75,9 @@
                 "path": [
                     "${workspaceRoot}/fltk",
                     "${workspaceRoot}/includes",
-                    "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include",
-                    "F:/Development/mingw-w64/lib/gcc/mingw32/6.3.0/include-fixed",
-                    "F:/Development/mingw-w64/include/*"
+                    "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include",
+                    "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include-fixed",
+                    "F:/Development/mingw-w64/x86_64/mingw64/include/*"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
