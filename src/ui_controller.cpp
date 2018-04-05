@@ -24,6 +24,8 @@ static Fl_Button *pauseBtn=(Fl_Button *)0;
 static Fl_Button *toggleVideoWnd=(Fl_Button *)0;
 static Fl_Slider *playTrackbar=(Fl_Slider *)0;
 static Fl_Input  *fileNameEdit=(Fl_Input *)0;
+static Fl_Box    *uavvLibVerLabel = (Fl_Box *)0;
+static Fl_Box    *uavvStreamStateLabel = (Fl_Box *)0;
 
 static Fl_Image *image_open() {
     static Fl_Image *image = new Fl_RGB_Image(idata_open, 20, 20, 4, 0);
@@ -114,6 +116,7 @@ void UIController::InitUIComponents()
     int X = (Fl::w() - mainWnd->w())/2;
     int Y = MAIN_OFFSET_Y;
     mainWnd->resize(X, Y, W, H);
+    mainWnd->SetUIController(this);
 
     shared_ptr<RenderWnd> renderTmp(UIController::makeRenderPanel(this, FRAME_WIDTH, FRAME_HEIGHT, "Video playback"));
     renderWnd = std::move(renderTmp);
@@ -127,6 +130,7 @@ void UIController::InitUIComponents()
     int rX = (Fl::w() - renderWnd->w())/2;
     int rY = MAIN_OFFSET_Y + mainWnd->decorated_h() + RENDER_OFFSET_Y;
     renderWnd->resize(rX, rY, rW, rH);
+    renderWnd->SetUIController(this);
 }
 
 void UIController::ShowMainWindow(int argc, char *argv[])
@@ -161,7 +165,12 @@ void UIController::SetupVideoPlayer()
 {
     shared_ptr<VideoPlayer> tmpPlayer(new VideoPlayer());
     videoPlayer = std::move(tmpPlayer);
-    videoPlayer->SetImageDecodingCallback(UIController::ImageDecoding, static_cast<void*>(this));
+
+    VideoPlayerCallbackInfo info;
+    info.pfnImageCallback = UIController::ImageDecodingNotification;
+    info.pfnPositionChangedNotification =  UIController::PositionChangeNotification;
+    info.pUserData = static_cast<void*>(this);
+    videoPlayer->SetCallbackInfo(info);    
 }
 
 /*static*/ UIController* UIController::CreateInstance()
@@ -199,11 +208,34 @@ void UIController::SetupVideoPlayer()
    
     Fl::scheme("gtk+");
     Fl::get_system_colors();
-    //Fl::visual(FL_RGB);
+    Fl::visual(FL_RGB);
 }
 
 
-/*static*/ void UIController::OnPickFile(Fl_Widget*, void*) 
+void UIController::FileNameChanged()
+{
+    Stop();
+ 
+    std::string fileSource(fileNameEdit->value());
+    if(fileSource.size() > 0)
+        videoPlayer->InitPlayback(fileSource);
+
+    FirstFrame();
+}
+
+/*static*/ void UIController::OnChangeFileName(Fl_Widget*, void* pUserData) 
+{
+    assert(pUserData);
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->FileNameChanged();
+}
+
+/*static*/ void UIController::OnPickFile(Fl_Widget* widget, void* pUserData) 
 {
   // Create native chooser
   Fl_Native_File_Chooser native;
@@ -223,14 +255,18 @@ void UIController::SetupVideoPlayer()
       fl_beep(); 
       break;		// CANCEL
     default: 								// PICKED FILE
-      if ( native.filename() ) 
-      {
-          fileNameEdit->value(native.filename());
-      } 
-      else 
-      {
-	        fileNameEdit->value("");
-      }
+        {
+            if ( native.filename() ) 
+            {
+                fileNameEdit->value(native.filename());
+            } 
+            else 
+            {
+                fileNameEdit->value("");
+            }
+
+            OnChangeFileName(widget, pUserData);
+        }
       break;
   }
 }
@@ -257,6 +293,16 @@ const std::string& UIController::GetLibraryVersionString()
     return uavvVer;
 }
 
+const std::string& UIController::GetStreamingState()
+{
+    if(videoPlayer->IsPlaying() && !videoPlayer->IsPaused())
+        streamingState = videoPlayer->IsVideoStreaming() ? "Video source: streaming" : "Video source: file";
+    else
+        streamingState = "";
+        
+    return streamingState;
+}
+
 void UIController::ToggleRender()
 {
     renderWndVisible = !renderWndVisible;
@@ -276,13 +322,12 @@ void UIController::ToggleRender()
     controller->ToggleRender();
 }
 
-void UIController::FirstFrameClick()
+void UIController::FirstFrame()
 {
     if(videoPlayer->GoToStart())
     {
         playBtn->show();
         pauseBtn->hide();
-        playTrackbar->value(0.0);
     }    
 }
 
@@ -295,16 +340,15 @@ void UIController::FirstFrameClick()
         return;
     }
 
-    controller->FirstFrameClick();
+    controller->FirstFrame();
 }
 
-void UIController::PreviousFrameClick()
+void UIController::PreviousFrame()
 {
-    if(videoPlayer->StepBackward(playTrackbar->value()))
+    if(videoPlayer->StepBackward())
     {
         playBtn->show();
         pauseBtn->hide();
-        playTrackbar->value(playTrackbar->value() - 0.1);
     }   
 }
 
@@ -317,18 +361,21 @@ void UIController::PreviousFrameClick()
         return;
     }
 
-    controller->PreviousFrameClick();
+    controller->PreviousFrame();
 }
 
-void UIController::PlayClick()
+void UIController::Play()
 {
-    std::string fileSource(fileNameEdit->value());
-    videoPlayer->SetVideoSource(fileSource);
     videoPlayer->Play();
     if(videoPlayer->IsPlaying())
     {
         playBtn->hide();
         pauseBtn->show();
+        uavvStreamStateLabel->label(GetStreamingState().c_str());
+    }
+    else
+    {
+        fl_beep();
     }
 }
 
@@ -341,10 +388,10 @@ void UIController::PlayClick()
         return;
     }
 
-    controller->PlayClick();
+    controller->Play();
 }
 
-void UIController::PauseClick()
+void UIController::Pause()
 {
     videoPlayer->Pause();
     playBtn->show();
@@ -360,15 +407,16 @@ void UIController::PauseClick()
         return;
     }
 
-    controller->PauseClick();
+    controller->Pause();
 }
 
-void UIController::StopClick()
+void UIController::Stop()
 {
     videoPlayer->Stop();
     playBtn->show();
     pauseBtn->hide();
-    playTrackbar->value(0);
+
+    uavvStreamStateLabel->label(GetStreamingState().c_str());
 }
 
 /*static*/ void UIController::OnStopClick(Fl_Widget*, void* pUserData)
@@ -380,17 +428,20 @@ void UIController::StopClick()
         return;
     }
 
-    controller->StopClick();
+    controller->Stop();
 }
 
-void UIController::NextFrameClick()
+void UIController::NextFrame()
 {
-    if(videoPlayer->StepForward(playTrackbar->value()))
+    if(videoPlayer->StepForward())
     {
         playBtn->show();
         pauseBtn->hide();
-        playTrackbar->value(playTrackbar->value() + 0.1);
-    }    
+    }  
+    else
+    {
+        fl_beep();
+    }
 }
 
 /*static*/ void UIController::OnNextFrameClick(Fl_Widget*, void* pUserData)
@@ -402,17 +453,20 @@ void UIController::NextFrameClick()
         return;
     }
 
-    controller->NextFrameClick();
+    controller->NextFrame();
 }
 
-void UIController::LastFrameClick()
+void UIController::LastFrame()
 {
     if(videoPlayer->GoToEnd())
     {
         playBtn->show();
         pauseBtn->hide();
-        playTrackbar->value(100.0);
-    }    
+    }  
+    else
+    {
+        fl_beep();
+    }  
 }
 
 /*static*/ void UIController::OnLastFrameClick(Fl_Widget*, void* pUserData)
@@ -424,12 +478,12 @@ void UIController::LastFrameClick()
         return;
     }
 
-    controller->LastFrameClick();
+    controller->LastFrame();
 }
 
 void UIController::SliderPosChange(double pos)
 {
-    videoPlayer->GoTo(pos);
+    videoPlayer->SlideToPosition(pos);
 }
 
 /*static*/ void UIController::OnSliderPosChange(Fl_Widget* widget, void* pUserData)
@@ -464,12 +518,13 @@ void UIController::SliderPosChange(double pos)
             fileNameEdit = new Fl_Input(25, 25, 465, 25, "Video file");
             fileNameEdit->tooltip("Video file path");
             fileNameEdit->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+            fileNameEdit->callback(UIController::OnChangeFileName, static_cast<void*>(controller));
         } // Fl_Input* fileNameEdit
         { 
             loadVideo = new Fl_Button(490, 25, 25, 25);
             loadVideo->tooltip("Load video file");
             loadVideo->down_box(FL_DOWN_BOX);
-            loadVideo->callback(UIController::OnPickFile);
+            loadVideo->callback(UIController::OnPickFile, static_cast<void*>(controller));
             loadVideo->image( image_open() );   
         } // Fl_Button* loadVideo
         
@@ -538,10 +593,17 @@ void UIController::SliderPosChange(double pos)
         } // Fl_Button* toggleVideoWnd
 
         { 
-            Fl_Box* uavvLibVer = new Fl_Box( FL_FLAT_BOX, 5, 170, 100, 20, controller->GetLibraryVersionString().c_str());
-            uavvLibVer->labeltype(FL_NORMAL_LABEL);
-            uavvLibVer->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
-            uavvLibVer->labelsize(10);
+            uavvLibVerLabel = new Fl_Box( FL_FLAT_BOX, 5, 170, 100, 20, controller->GetLibraryVersionString().c_str());
+            uavvLibVerLabel->labeltype(FL_NORMAL_LABEL);
+            uavvLibVerLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
+            uavvLibVerLabel->labelsize(10);
+        } // Fl_Button* toggleVideoWnd
+
+        { 
+            uavvStreamStateLabel = new Fl_Box( FL_FLAT_BOX, 110, 170, 100, 20, nullptr);
+            uavvStreamStateLabel->labeltype(FL_NORMAL_LABEL);
+            uavvStreamStateLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
+            uavvStreamStateLabel->labelsize(10);
         } // Fl_Button* toggleVideoWnd
 
         main_panel->set_non_modal();
@@ -661,11 +723,14 @@ void UIController::UpdateGLFrameBufferTest()
 void UIController::ImageBufferReceived(UAVV_IMAGE img, int delay, float pos)
 {
     renderWnd->UpdateGLFrame(img);
-    playTrackbar->value(pos);
+    
+    if(videoPlayer->IsPlaying())
+        videoPlayer->SetCurrentPosition(pos);
+
     Fl::awake();
 }
 
-/*static*/ void UIController::ImageDecoding(UAVV_IMAGE img, int delay, float pos, void* pUserData)
+/*static*/ void UIController::ImageDecodingNotification(UAVV_IMAGE img, int delay, float pos, void* pUserData)
 {
     UIController* controller = static_cast<UIController*>(pUserData); 
     if(!controller)
@@ -674,4 +739,25 @@ void UIController::ImageBufferReceived(UAVV_IMAGE img, int delay, float pos)
     }
 
     controller->ImageBufferReceived(img, delay, pos);
+}
+
+void UIController::UpdatePosition(float pos)
+{
+    playTrackbar->value(static_cast<double>(pos));
+}
+
+/*static*/ void UIController::PositionChangeNotification(float pos, void* pUserData)
+{
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->UpdatePosition(pos);
+}
+
+void UIController::UpdatePlayerControls()
+{
+    UpdatePosition(videoPlayer->GetCurrentPosition());
 }

@@ -41,6 +41,7 @@
 
 namespace cvtool
 {
+    class UIController;
     class RenderWnd : public Fl_Gl_Window 
     {
 
@@ -48,13 +49,14 @@ namespace cvtool
         GLUavvImage mGlFrame;
         UAVV_IMAGE  mpFrame;
         std::mutex  imageMutex;
-
+        UIController* pController; 
     protected:
         void draw();
 
     public:
         RenderWnd(int W, int H, const char* l = 0);
         void UpdateGLFrame(const UAVV_IMAGE buf);
+        void SetUIController(UIController* controller);
     };
 }
 

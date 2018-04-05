@@ -25,6 +25,7 @@ namespace cvtool
         UAVV_IMAGE imageFrameBuffer;
         bool renderWndVisible;
         std::string uavvVer;
+        std::string streamingState;
         
         protected:
             static MainWnd* makeMainPanel(UIController* controller);
@@ -36,6 +37,7 @@ namespace cvtool
 
             UAVV_IMAGE CreateGLFrameBufferTest();
             void draw_bresenham_line(UAVV_IMAGE buf, int x1, int y1, int x2, int y2);
+
         public:
         
             ~UIController();
@@ -48,21 +50,25 @@ namespace cvtool
             void SetupGLWindowUpdateTest();
             void SetupVideoPlayer();
             const std::string& GetLibraryVersionString();
+            const std::string& GetStreamingState();
             
             // button click handlers
             void ToggleRender();
-            void FirstFrameClick();
-            void PreviousFrameClick();
-            void PlayClick();
-            void PauseClick();
-            void StopClick();
-            void NextFrameClick();
-            void LastFrameClick();
+            void FirstFrame();
+            void PreviousFrame();
+            void Play();
+            void Pause();
+            void Stop();
+            void NextFrame();
+            void LastFrame();
             void SliderPosChange(double pos);
+            void FileNameChanged();
 
             void ExitApplication();
             void UpdateGLFrameBufferTest();
             void ImageBufferReceived(UAVV_IMAGE img, int delay, float pos);
+            void UpdatePosition(float pos);
+            void UpdatePlayerControls();
             
             static UIController* CreateInstance();
 
@@ -82,9 +88,11 @@ namespace cvtool
             static void OnCloseMainWnd(Fl_Widget*, void*);
             static void OnSliderPosChange(Fl_Widget*, void*);
             static void OnRenderTimeoutElapsed(void*);
+            static void OnChangeFileName(Fl_Widget*, void*); 
 
             // video player callbacks 
-            static void ImageDecoding(UAVV_IMAGE img, int delay, float pos, void* pUserData);
+            static void ImageDecodingNotification(UAVV_IMAGE img, int delay, float pos, void* pUserData);
+            static void PositionChangeNotification(float pos, void* pUserData);
     };
 }
 

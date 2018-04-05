@@ -9,22 +9,19 @@ using namespace uavv;
 #include "uavv_video.h"
 
 
-#define LICENSE_DIR     "."
-#define TIMEOUT_MS      60000
-
-#define STREAM_DUMP     "stream.ts"
-#define IMAGE_DUMP      "image.rgba"
-#define KLV_DUMP        "klv.txt"
+#define LICENSE_DIR         "."
+#define TIMEOUT_MS          10000
+#define SCROLL_TIMEOUT_MS   500
+#define MOVE_STEP           1.0
 
 VideoPlayer::VideoPlayer()
     : cancelDecoding(0)
     , uavvHandler(nullptr)
     , isPaused(false)
     , isDecoding(false)
-    , pfnImageCallback(nullptr)
-    , pUserData(nullptr)
+    , currentPosition(0.0)
 {
-
+    callbackInfo.Reset();
 } 
     
 VideoPlayer::~VideoPlayer()
@@ -51,6 +48,7 @@ VideoPlayer::~VideoPlayer()
 
 bool VideoPlayer::InitPlayback(const std::string& file)
 {
+    sourceFile = file;
     if(sourceFile.length() == 0)
     {
         fl_message("Source path is empty.");
@@ -59,26 +57,31 @@ bool VideoPlayer::InitPlayback(const std::string& file)
 
     ResetPlayer();
 
-    uavvHandler = IUAVVInterface::CreateVideoHandle(file);
+    uavvHandler = IUAVVInterface::CreateVideoHandle(sourceFile);
     if (!uavvHandler)
     {
         fl_message("Library needs to be activated.");
         return false;
     }
 
-    IUAVVInterface::SetAbortCallback(uavvHandler, VideoPlayer::abort_cb, static_cast<UAVV_USER_DATA>(this));
-    IUAVVInterface::SetImageDecodeCallback(uavvHandler, pfnImageCallback, pUserData);
+    IUAVVInterface::SetAbortCallback(uavvHandler, VideoPlayer::abort_cb, static_cast<USER_DATA>(this));
+    IUAVVInterface::SetImageDecodeCallback(uavvHandler, callbackInfo.pfnImageCallback, callbackInfo.pUserData);
     return true;
-}
-
-void VideoPlayer::SetVideoSource(std::string& filePath)
-{
-    sourceFile = filePath;
 }
 
 void VideoPlayer::ResetPlayer()
 {
     StopDecoding();
+
+    IUAVVInterface::DestroyVideoHandle(uavvHandler);
+    ResetCancelState();
+    uavvHandler = nullptr;
+    isPaused = false;
+    SetCurrentPosition(0.0);
+
+    if(callbackInfo.pfnPositionChangedNotification)
+        callbackInfo.pfnPositionChangedNotification(GetCurrentPosition(), callbackInfo.pUserData);
+
 }
 
 void VideoPlayer::Play()
@@ -89,63 +92,54 @@ void VideoPlayer::Play()
     }
     else
     {
-        if(!InitPlayback(sourceFile))
-            return;
-
-        StartDecoding();
+        if(!IsDecodeInitialized())
+        {
+            if(!InitPlayback(sourceFile))
+                return;
+        }
     }
 
-    //fl_message("Play video");
+    StartDecoding();
 }
     
 void VideoPlayer::Stop()
 {
-    StopDecoding();
-    //fl_message("Stop video playback");
+    ResetPlayer();
 }
     
 void VideoPlayer::Pause()
 {
-    PauseDecoding();
-    //fl_message("Pause video playback");
+    PauseDecoding(); 
 }
     
 bool VideoPlayer::GoToStart()
 {
-    return GoTo(0.0);
-    //fl_message("Go to start");
+    return GoToPos(0.0);
 }
     
 bool VideoPlayer::GoToEnd()
 {
-    return GoTo(100.0);
-    //fl_message("Go to end");
+    return GoToPos(100.0);
 }
     
-bool VideoPlayer::StepBackward(double curPos)
+bool VideoPlayer::StepBackward()
 {
-    double newPos = curPos - 0.1;
-    if(newPos < 0)
-        newPos = 0;
-        
-    return GoTo(newPos);
+    float newPos = currentPosition - MOVE_STEP;
+    return GoToPos(newPos);
 }
 
-bool VideoPlayer::StepForward(double curPos)
+bool VideoPlayer::StepForward()
 {
-    double newPos = curPos + 0.1;
-    if(newPos > 100.0)
-        newPos = 100.0;
-    
-    return GoTo(newPos);
+    float newPos = currentPosition + MOVE_STEP;
+    return GoToPos(newPos);
 }
 
-bool VideoPlayer::GoTo(double pos)
+bool VideoPlayer::SlideToPosition(float pos)
 {
-    return MoveToPos(pos);
+    return GoToPos(pos, false);
 }
 
-int VideoPlayer::IsDecodingCancelled()
+int VideoPlayer::IsDecodingCancelled() const
 {
     return cancelDecoding;
 }
@@ -159,18 +153,17 @@ int VideoPlayer::IsDecodingCancelled()
     return player->IsDecodingCancelled();
 }
 
-void VideoPlayer::SetImageDecodingCallback(fnImageCallback callback, USER_DATA userData)
-{
-    pfnImageCallback = callback;
-    pUserData = userData;
-}
-
-bool VideoPlayer::IsPlaying()
+bool VideoPlayer::IsPlaying() const
 {
     return isDecoding && !isPaused;
 }
 
-bool VideoPlayer::IsDecodeInitialized()
+bool VideoPlayer::IsPaused() const
+{
+    return isPaused;
+}
+
+bool VideoPlayer::IsDecodeInitialized() const
 {
     return (uavvHandler != nullptr);
 }
@@ -190,9 +183,6 @@ void VideoPlayer::StartDecoding()
         {
             while(!IsDecodingCancelled())
             {
-                if(isPaused)
-                    continue;
-
                 IUAVVInterface::DecodeVideo(uavvHandler, TIMEOUT_MS);
             }
 
@@ -207,11 +197,6 @@ void VideoPlayer::StopDecoding()
     cancelDecoding = 1;  
     if(decodingThread.joinable())
         decodingThread.join();
-
-    IUAVVInterface::DestroyVideoHandle(uavvHandler);
-    ResetCancelState();
-    uavvHandler = nullptr;
-    isPaused = false;
 }
     
 void VideoPlayer::ResetCancelState()
@@ -222,12 +207,15 @@ void VideoPlayer::ResetCancelState()
 void VideoPlayer::PauseDecoding()
 {
     isPaused = true;
+    StopDecoding();
 }
     
-bool VideoPlayer::MoveToPos(double pos)
+bool VideoPlayer::GoToPos(float pos, bool notifyObserver /*=true*/)
 {
     if(!IsDecodeInitialized())
+    {
         return false;
+    }
 
     // can't move to position for streaming video
     if(IsVideoStreaming())
@@ -235,15 +223,43 @@ bool VideoPlayer::MoveToPos(double pos)
 
     if(isDecoding)
     {
-        isPaused = true;
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        StopDecoding();
     }
 
-    IUAVVInterface::GoToPosition(uavvHandler, static_cast<float>(pos));
+    
+    SetCurrentPosition(pos);
+    IUAVVInterface::GoToPosition(uavvHandler, static_cast<float>(GetCurrentPosition()));    
+    IUAVVInterface::DecodeVideo(uavvHandler, SCROLL_TIMEOUT_MS);
+    
+    if(notifyObserver && callbackInfo.pfnPositionChangedNotification)
+        callbackInfo.pfnPositionChangedNotification(GetCurrentPosition(), callbackInfo.pUserData);
+
     return true;
 }
 
-bool VideoPlayer::IsVideoStreaming()
+bool VideoPlayer::IsVideoStreaming() const
 {
     return (IUAVVInterface::IsStreamingVideo(uavvHandler) != 0);
+}
+
+float VideoPlayer::GetCurrentPosition() const
+{
+    return currentPosition;
+}
+
+void VideoPlayer::SetCallbackInfo(const VideoPlayerCallbackInfo& info)
+{
+    callbackInfo.pfnImageCallback = info.pfnImageCallback;
+    callbackInfo.pfnPositionChangedNotification = info.pfnPositionChangedNotification;
+    callbackInfo.pUserData = info.pUserData;
+}
+
+void VideoPlayer::SetCurrentPosition(float pos)
+{
+    currentPosition = pos;
+    if(currentPosition < 0.0)
+        currentPosition = 0.0;
+    
+    if(currentPosition > 100.0)
+        currentPosition = 100.0;
 }

@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <ui_controller.h>
 #include <FL/filename.H>
 #include <FL/fl_ask.H>
 #include <FL/Fl_Input.H>
@@ -39,6 +40,11 @@ MainWnd::MainWnd(int X, int Y, int W, int H, const char* l) :
   Fl_Double_Window(X, Y, W, H, l)
 {
 
+}
+
+void MainWnd::SetUIController(UIController* controller)
+{
+    pController = controller;
 }
 
 //

@@ -36,10 +36,14 @@
 
 namespace cvtool
 {
+  class UIController;
   class MainWnd : public Fl_Double_Window 
   {
+      UIController* pController;
+      
       public:
           MainWnd(int X, int Y, int W, int H, const char* l = 0);
+          void SetUIController(UIController* controller);
   };
 }
 

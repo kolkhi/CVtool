@@ -27,6 +27,7 @@
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_Preferences.H>
 #include <uavv_wrapper.h>
+#include <ui_controller.h>
 
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <io.h>
@@ -49,6 +50,10 @@ RenderWnd::RenderWnd(int W, int H, const char* l) :
     resizable(this);
 }
 
+void RenderWnd::SetUIController(UIController* controller)
+{
+    pController = controller;
+}
 
 void RenderWnd::UpdateGLFrame(const UAVV_IMAGE buf)
 {
@@ -56,12 +61,11 @@ void RenderWnd::UpdateGLFrame(const UAVV_IMAGE buf)
     if (!buf) 
         return;
     
-    imageMutex.lock();
+    std::lock_guard<std::mutex> lock(imageMutex);
     
     IUAVVInterface::DestroyImageHandle(mpFrame);
     mpFrame = IUAVVInterface::CopyImageHandle(buf);
     
-    imageMutex.unlock();
     // Schedule a redraw
     redraw();
 }
@@ -72,9 +76,8 @@ void RenderWnd::draw()
     if (!valid())  
       ortho();
 
+    std::lock_guard<std::mutex> lock(imageMutex);
     
-    imageMutex.lock();
-
     // Update GL frame
     if (mpFrame)
     {
@@ -85,7 +88,6 @@ void RenderWnd::draw()
 
     if (!mGlFrame.isValid())  
     {
-        imageMutex.unlock();
         return;
     }    
 
@@ -99,8 +101,6 @@ void RenderWnd::draw()
     // Fit GL frame to window
     float scale_x = w() / (float)mGlFrame.width();
     float scale_y = h() / (float)mGlFrame.height();
-    //float scale_x = w();//(float)mGlFrame.width();
-    //float scale_y = h();//(float)mGlFrame.height();
     
     glPushMatrix();
     glScalef(scale_x, scale_y, 1.0);
@@ -109,7 +109,8 @@ void RenderWnd::draw()
 
     glPopMatrix();
     glDisable(GL_BLEND);
-    imageMutex.unlock();
+
+    pController->UpdatePlayerControls();
 }
 
 //

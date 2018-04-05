@@ -6,16 +6,27 @@
 #include <atomic>
 #include <thread>
 
-#define LICENSE_DIR     "."
-#define TIMEOUT_MS      60000
-#define IMAGE_DUMP      "image.rgba"
-
 namespace cvtool
 {
+    typedef void (fnPositionChangedNotification)(float pos, void* pUserData);
     using fnImageCallback = uavv::fnImageDecodeCallback;
     using fnCancelCallback = uavv::fnAbortCallback;
 
     using USER_DATA = uavv::UAVV_USER_DATA;
+
+    struct VideoPlayerCallbackInfo
+    {
+        fnImageCallback* pfnImageCallback;
+        fnPositionChangedNotification* pfnPositionChangedNotification;
+        USER_DATA pUserData;
+
+        void Reset()
+        {
+            pfnImageCallback = nullptr;
+            pfnPositionChangedNotification = nullptr;
+            pUserData = nullptr;   
+        }
+    };
 
     class VideoPlayer 
     {
@@ -26,11 +37,11 @@ namespace cvtool
             std::atomic<bool> isPaused;
             std::atomic<bool> isDecoding;
             std::string sourceFile;
-
-            fnImageCallback* pfnImageCallback;
-            void* pUserData;
+            float currentPosition;
 
             std::thread decodingThread;
+            VideoPlayerCallbackInfo callbackInfo;
+
         private:
             // private callbacks
             static int abort_cb(USER_DATA v);
@@ -39,14 +50,14 @@ namespace cvtool
             void StartDecoding();
             void StopDecoding();
             void PauseDecoding();
-            bool MoveToPos(double pos);
+            bool GoToPos(float pos, bool notifyObserver = true);
 
-            bool InitPlayback(const std::string& file);
             void ResetPlayer();
-
-            bool IsDecodeInitialized();
             void ResetCancelState();
-            int IsDecodingCancelled();
+
+            // player state query functions
+            bool IsDecodeInitialized() const;
+            int IsDecodingCancelled() const;
 
         public:
             VideoPlayer();
@@ -57,15 +68,19 @@ namespace cvtool
             void Pause();
             bool GoToStart();
             bool GoToEnd();
-            bool StepBackward(double curPos);
-            bool StepForward(double curPos);
-            bool GoTo(double pos);
+            bool StepBackward();
+            bool StepForward();
+            bool SlideToPosition(float pos);
 
-            bool IsVideoStreaming();
-            bool IsPlaying();
+            // player state query functions
+            bool IsVideoStreaming() const;
+            bool IsPlaying() const;
+            bool IsPaused() const;
+            float GetCurrentPosition() const;
+            void SetCurrentPosition(float);
 
-            void SetImageDecodingCallback(fnImageCallback callback, USER_DATA userData);
-            void SetVideoSource(std::string& filePath);
+            void SetCallbackInfo(const VideoPlayerCallbackInfo& info);
+            bool InitPlayback(const std::string& file);
 
             static bool InitUAVVLibrary();
             static std::string GetUAVVVersion();
