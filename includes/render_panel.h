@@ -48,10 +48,7 @@ namespace cvtool
         UAVV_IMAGE  mpFrame;
         std::mutex  imageMutex;
         UIController* pController; 
-        int zoomParam;
-        int posx;
-        int posy;
-
+        
     protected:
         void draw();
         int handle(int event);
@@ -60,6 +57,8 @@ namespace cvtool
         RenderWnd(int W, int H, const char* l = 0);
         void UpdateGLFrame(const UAVV_IMAGE buf);
         void SetUIController(UIController* controller);
+        UAVV_IMAGE GetCurrentFrameCopy();
+        void CleanUp();
     };
 }
 

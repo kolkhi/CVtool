@@ -70,7 +70,7 @@ Function {make_main_panel()} {open
   Fl_Window main_panel {
     label CVTool
     callback {Fl_Shared_Image *img = (Fl_Shared_Image *)template_preview->image();
-if (img) img->release();} open selected
+if (img) img->release();} open
     xywh {1154 386 540 190} type Double
     class MainWnd non_modal size_range {540 190 540 190} visible
   } {
@@ -114,6 +114,9 @@ if (img) img->release();} open selected
     }
     Fl_Button {} {
       image {zoomin.png} xywh {420 125 40 40}
+    }
+    Fl_Button {} {selected
+      image {zoomin_mouse.png} xywh {375 135 25 25}
     }
   }
 }

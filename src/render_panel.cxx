@@ -45,12 +45,16 @@ using namespace uavv;
 
 RenderWnd::RenderWnd(int W, int H, const char* l)    
             : Fl_Gl_Window(W, H, l), mpFrame(nullptr)
-            , zoomParam(1)
-            , posx(0)
-            , posy(0)
 {
     mode(FL_DOUBLE);
     resizable(this);
+}
+
+void RenderWnd::CleanUp()
+{
+    std::lock_guard<std::mutex> lock(imageMutex);
+    IUAVVInterface::DestroyImageHandle(mpFrame);
+    mpFrame = nullptr;
 }
 
 void RenderWnd::SetUIController(UIController* controller)
@@ -85,8 +89,6 @@ void RenderWnd::draw()
     if (mpFrame)
     {
         mGlFrame.copy(mpFrame);
-        IUAVVInterface::DestroyImageHandle(mpFrame);
-        mpFrame = nullptr;
     }
 
     if (!mGlFrame.isValid())  
@@ -116,6 +118,16 @@ void RenderWnd::draw()
     pController->UpdatePlayerControls();
 }
 
+UAVV_IMAGE RenderWnd::GetCurrentFrameCopy()
+{
+    if (!mpFrame) 
+        return nullptr;
+    
+    std::lock_guard<std::mutex> lock(imageMutex);
+    UAVV_IMAGE bufCopy = IUAVVInterface::CopyImageHandle(mpFrame);
+    return bufCopy;
+}
+
 int RenderWnd::handle(int event) 
 {
     switch(event) 
@@ -130,21 +142,9 @@ int RenderWnd::handle(int event)
                 valid(1);
             }
 
-            pController->OnRenderMouseDown(event, Fl::event_x(), Fl::event_y());
-            zoomParam <<= 1;
-            posx = Fl::event_x();
-            posy = (h() - Fl::event_y());
-            cursor(FL_CURSOR_CROSS);
-            if(zoomParam >= 32 )
-            {
-                //Fl_Image t;
-                cursor(FL_CURSOR_DEFAULT);
-                zoomParam = 1;
-                posx = 0;
-                posy = 0;
-            }        
-
-            redraw();
+            float xpos_scaled =  (float)Fl::event_x() / (float)w();
+            float ypos_scaled =  (float)(h() - Fl::event_y()) / (float)h();
+            pController->OnRenderMouseDown(event, xpos_scaled, ypos_scaled);
         }
         return 1;
     /*

@@ -67,6 +67,8 @@ namespace cvtool
             void ShowMainWindow(int argc, char *argv[]);
             bool IsVideoRenderVisible() const;
             bool IsZoomWindowVisible() const;
+            ZoomValue GetCurrentZoomValue() const;
+            int GetZoomNumber() const;
             void SetupGLWindowUpdateTest();
             void SetupVideoPlayer();
             
@@ -90,7 +92,7 @@ namespace cvtool
             void UpdatePosition(float pos);
             void UpdatePlayerControls();
             
-            void OnRenderMouseDown(int event, int x, int y);
+            void OnRenderMouseDown(int event, float scaledX, float scaledY);
 
             static UIController* CreateInstance();
 

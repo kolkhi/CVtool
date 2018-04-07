@@ -12,7 +12,8 @@ include_directories(./includes)
 add_executable(CVtool WIN32 ./src/main.cpp ./src/main_panel.cxx 
                             ./src/render_panel.cxx ./src/ui_controller.cpp 
                             ./src/video_player.cpp ./src/xloader.c 
-                            ./src/uavv_wrapper.cpp)
+                            ./src/uavv_wrapper.cpp ./src/zoom_panel.cxx 
+                            ./src/zoom_view.cxx)
 
 target_link_libraries(CVtool fltk)
 target_link_libraries(CVtool fltk_gl)

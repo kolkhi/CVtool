@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <cmath>
 #include <FL/filename.H>
 #include <FL/fl_ask.H>
 #include <FL/Fl_Shared_Image.H>
@@ -22,14 +23,19 @@ using namespace uavv;
  Window for zoom
 */
 
-ZoomView::ZoomView(int X, int Y, int W, int H, const char* l) :    
-            Fl_Gl_Window(X, Y, W, H, l), mpFrame(nullptr)
+ZoomView::ZoomView(int X, int Y, int W, int H, const char* l)
+            : Fl_Gl_Window(X, Y, W, H, l) 
+            , mpFrame(nullptr)
+            , zoomParam(1)
+            , mouseScaledX(0.0)
+            , mouseScaledY(0.0)
+            
 {
     mode(FL_DOUBLE);
     mGlFrame.EnableInterpolation(false);
 }
 
-void ZoomView::UpdateGLFrame(const UAVV_IMAGE buf)
+void ZoomView::UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, int zoomVal)
 {
     // Keep a reference to the frame buffer
     if (!buf) 
@@ -40,6 +46,11 @@ void ZoomView::UpdateGLFrame(const UAVV_IMAGE buf)
     IUAVVInterface::DestroyImageHandle(mpFrame);
     mpFrame = IUAVVInterface::CopyImageHandle(buf);
     
+    mouseScaledX = scaledX;
+    mouseScaledY = scaledY;
+
+    zoomParam = zoomVal;
+
     // Schedule a redraw
     redraw();
 }
@@ -48,7 +59,9 @@ void ZoomView::UpdateGLFrame(const UAVV_IMAGE buf)
 void ZoomView::draw()
 {
     if (!valid())  
-      ortho();
+    {
+        ortho();
+    } 
 
     std::lock_guard<std::mutex> lock(imageMutex);
     
@@ -56,14 +69,7 @@ void ZoomView::draw()
     if (mpFrame)
     {
         mGlFrame.copy(mpFrame);
-        IUAVVInterface::DestroyImageHandle(mpFrame);
-        mpFrame = nullptr;
-    }
-
-    /*if (!mGlFrame.isValid())  
-    {
-        return;
-    }*/    
+    }  
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -76,13 +82,49 @@ void ZoomView::draw()
     float scale_x = w() / (float)mGlFrame.width();
     float scale_y = h() / (float)mGlFrame.height();
     
-    glPushMatrix();
-    glScalef(scale_x, scale_y, 1.0);
+    if (mGlFrame.isValid())  
+    {
+        int centerX = w()/2 / scale_x;
+        int centerY = h()/2 / scale_y;
+        int winWidth = w();
+        int winHeight = h();
+        int width = mGlFrame.width();
+        int height = mGlFrame.height();
+        int mouseX = std::ceil(mouseScaledX * (float)width);
+        int mouseY = std::ceil(mouseScaledY * (float)height);
+        
+        
+        glPushMatrix();
+        glScalef(scale_x, scale_y, 0);
+        //glTranslatef(-centerX * zoomParam, -centerY * zoomParam, 0.0);  
+        glScalef(zoomParam, zoomParam, 0.0);
 
-    //mGlFrame.draw();
+        int offsetX = (mouseX - std::ceil(mouseX/zoomParam));
+        int offsetY = (mouseY - std::ceil(mouseY/zoomParam));
+        int maxOffsetX = (width - std::ceil(width/zoomParam));
+        int maxOffsetY = (height - std::ceil(height/zoomParam));
+        
+        glTranslatef(-offsetX , -offsetY , 0.0);
+        //glTranslatef(centerX / zoomParam , centerY / zoomParam , 0.0);        
+        
+        mGlFrame.draw();
 
-    glPopMatrix();
-    glDisable(GL_BLEND);
+        glPopMatrix();
+        glDisable(GL_BLEND);
+    } 
+}
+
+void ZoomView::MakeZoom(int zoomVal)
+{
+    zoomParam = zoomVal;
+    redraw();
+}
+
+void ZoomView::CleanUp()
+{
+    std::lock_guard<std::mutex> lock(imageMutex);
+    IUAVVInterface::DestroyImageHandle(mpFrame);
+    mpFrame = nullptr;
 }
 
 //

@@ -25,12 +25,18 @@ namespace cvtool
         GLUavvImage mGlFrame;
         UAVV_IMAGE  mpFrame;
         std::mutex  imageMutex; 
+        int zoomParam;
+        float mouseScaledX;
+        float mouseScaledY;
+
     protected:
         void draw();
 
     public:
         ZoomView(int X, int Y, int W, int H, const char* l = 0);
-        void UpdateGLFrame(const UAVV_IMAGE buf);
+        void UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, int zoomVal);
+        void MakeZoom(int zoomVal);
+        void CleanUp();
     };
 }
 

@@ -2,6 +2,7 @@
 #include <FL/Fl_Preferences.H>
 #include <uavv_wrapper.h>
 #include <ui_controller.h>
+#include <cassert>
 
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <io.h>
@@ -22,16 +23,43 @@ ZoomWnd::ZoomWnd(int W, int H, const char* l) :
     
 }
 
-void ZoomWnd::UpdateGLFrame(const UAVV_IMAGE buf)
+void ZoomWnd::UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, int zoomParam)
 {
-    // Keep a reference to the frame buffer
+    assert(zoomView);
+    if(!zoomView)
+        return;
 
+    zoomView->UpdateGLFrame(buf, scaledX, scaledY, zoomParam);
 }
 
 void ZoomWnd::SetUIController(UIController* controller)
 {
     pController = controller;
 }
+
+void ZoomWnd::SetView(ZoomView* view)
+{
+    zoomView = view;
+}
+
+void ZoomWnd::ZoomChanged(int zoomParam)
+{
+    assert(zoomView);
+    if(!zoomView)
+        return;
+
+    zoomView->MakeZoom(zoomParam);
+}
+
+void ZoomWnd::CleanUp()
+{
+    assert(zoomView);
+    if(!zoomView)
+        return;
+
+    zoomView->CleanUp();
+}
+
 
 //
 // End of "$Id: zoom_panel.fl 02 2018-03-29 18:21:11Z gsergia $".
