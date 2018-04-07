@@ -32,8 +32,6 @@
 #include <mutex>
 #include <gl_uavv_image.h>
 
-#define FRAME_WIDTH             800
-#define FRAME_HEIGHT            600
 
 /**
  Video renderer window
@@ -50,9 +48,14 @@ namespace cvtool
         UAVV_IMAGE  mpFrame;
         std::mutex  imageMutex;
         UIController* pController; 
+        int zoomParam;
+        int posx;
+        int posy;
+
     protected:
         void draw();
-
+        int handle(int event);
+         
     public:
         RenderWnd(int W, int H, const char* l = 0);
         void UpdateGLFrame(const UAVV_IMAGE buf);

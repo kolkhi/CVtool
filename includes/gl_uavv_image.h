@@ -34,7 +34,8 @@ namespace cvtool
         GLuint*            mTiles;      ///< Texture tiles arranged by row
         int                mRow;        ///< Number of tiles vertically
         int                mCol;        ///< Number of tiles horizontally
-        UAVV_IMAGE         mRgba;      ///< RGBA buffer for tile generation          
+        UAVV_IMAGE         mRgba;      ///< RGBA buffer for tile generation   
+        bool               bDrawInterpolated;       
 
         /** @brief Creates a single tile from the frame buffer.
             @param buf  The frame buffer to copy from.  @p NULL is supported.
@@ -66,13 +67,20 @@ namespace cvtool
             // Create OpenGL texture
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
             glBindTexture(GL_TEXTURE_2D, mTiles[0]);
-            glTexParameteri(GL_TEXTURE_2D,
-                    GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D,
-                    GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
-            glTexImage2D(GL_TEXTURE_2D, 0,
-                    GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            
+            if(IsInterpolationEnabled())
+            {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
+            }
+            else
+            {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            }
+            
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
             // Clean up after an error
             if (glGetError() != GL_NO_ERROR)
@@ -104,7 +112,7 @@ namespace cvtool
         /** @brief Default constructor.
             @param id   Object identifier.
         */
-        GLUavvImage() : mFrameW(0), mFrameH(0), mTiles(nullptr), mRow(0), mCol(0), mRgba(nullptr)
+        GLUavvImage() : mFrameW(0), mFrameH(0), mTiles(nullptr), mRow(0), mCol(0), mRgba(nullptr), bDrawInterpolated(true)
         {
         }
 
@@ -124,6 +132,8 @@ namespace cvtool
         
         /// @brief Obtains the frame height
         inline int height() const  { return mFrameH; }
+
+        inline bool IsInterpolationEnabled() const { return bDrawInterpolated; }
 
         /** @brief Copies from a frame buffer.
             @details    This method should be called from Fl_Gl_Window::draw().
@@ -188,6 +198,11 @@ namespace cvtool
 
             // Restore OpenGL states
             glPopAttrib();
+        }
+
+        void EnableInterpolation(bool val)
+        {
+            bDrawInterpolated = val;
         }
     };
 }

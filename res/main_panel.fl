@@ -71,7 +71,7 @@ Function {make_main_panel()} {open
     label CVTool
     callback {Fl_Shared_Image *img = (Fl_Shared_Image *)template_preview->image();
 if (img) img->release();} open selected
-    xywh {625 230 540 190} type Double
+    xywh {1154 386 540 190} type Double
     class MainWnd non_modal size_range {540 190 540 190} visible
   } {
     Fl_Text_Editor {} {
@@ -111,6 +111,9 @@ if (img) img->release();} open selected
     }
     Fl_Button toggleVideoWnd {
       private image {toggle.png} xywh {475 125 40 40} type Toggle down_box DOWN_BOX selection_color 55 align 512
+    }
+    Fl_Button {} {
+      image {zoomin.png} xywh {420 125 40 40}
     }
   }
 }

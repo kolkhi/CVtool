@@ -43,8 +43,11 @@ using namespace uavv;
  Window for rendering
 */
 
-RenderWnd::RenderWnd(int W, int H, const char* l) :    
-            Fl_Gl_Window(W, H, l), mpFrame(nullptr)
+RenderWnd::RenderWnd(int W, int H, const char* l)    
+            : Fl_Gl_Window(W, H, l), mpFrame(nullptr)
+            , zoomParam(1)
+            , posx(0)
+            , posy(0)
 {
     mode(FL_DOUBLE);
     resizable(this);
@@ -104,13 +107,70 @@ void RenderWnd::draw()
     
     glPushMatrix();
     glScalef(scale_x, scale_y, 1.0);
-
+    
     mGlFrame.draw();
 
     glPopMatrix();
     glDisable(GL_BLEND);
 
     pController->UpdatePlayerControls();
+}
+
+int RenderWnd::handle(int event) 
+{
+    switch(event) 
+    {
+    case FL_PUSH:
+        {
+            //... mouse down event ...
+            //... position in Fl::event_x() and Fl::event_y()
+            if (!valid())  
+            {
+                ortho();
+                valid(1);
+            }
+
+            pController->OnRenderMouseDown(event, Fl::event_x(), Fl::event_y());
+            zoomParam <<= 1;
+            posx = Fl::event_x();
+            posy = (h() - Fl::event_y());
+            cursor(FL_CURSOR_CROSS);
+            if(zoomParam >= 32 )
+            {
+                //Fl_Image t;
+                cursor(FL_CURSOR_DEFAULT);
+                zoomParam = 1;
+                posx = 0;
+                posy = 0;
+            }        
+
+            redraw();
+        }
+        return 1;
+    /*
+    case FL_RELEASE:   
+        ... mouse up event ...
+        return 1;
+    case FL_DRAG:
+        ... mouse moved while down event ...
+        return 1;
+    case FL_FOCUS :
+    case FL_UNFOCUS :
+        ... Return 1 if you want keyboard events, 0 otherwise
+        return 1;
+    case FL_KEYBOARD:
+        ... keypress, key is in Fl::event_key(), ascii in Fl::event_text()
+        ... Return 1 if you understand/use the keyboard event, 0 otherwise...
+        return 1;
+    case FL_SHORTCUT:
+        ... shortcut, key is in Fl::event_key(), ascii in Fl::event_text()
+        ... Return 1 if you understand/use the shortcut event, 0 otherwise...
+        return 1;
+    */
+    default:
+        // pass other events to the base class...
+        return Fl_Gl_Window::handle(event);
+    }
 }
 
 //

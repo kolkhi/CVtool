@@ -22,6 +22,8 @@
           "./src/main.cpp",
           "./src/main_panel.cxx",
           "./src/render_panel.cxx",
+          "./src/zoom_panel.cxx",
+          "./src/zoom_view.cxx",
           "./src/ui_controller.cpp",
           "./src/video_player.cpp",
           "./src/xloader.c",

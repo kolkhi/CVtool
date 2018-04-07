@@ -5,9 +5,13 @@
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Slider.H>
+#include <Fl/Fl_Value_Slider.H>
 #include <FL/fl_ask.H>
 #include <Fl/Fl_Box.H>
 #include <video_player.h>
+#include <zoom_view.h>
+#include <Fl/Fl_Roller.H>
+#include <CubeView.h>
 #include <chrono>
 
 using namespace std;
@@ -22,10 +26,13 @@ static Fl_Button *nextFrameBtn=(Fl_Button *)0;
 static Fl_Button *lastFrameBtn=(Fl_Button *)0;
 static Fl_Button *pauseBtn=(Fl_Button *)0;
 static Fl_Button *toggleVideoWnd=(Fl_Button *)0;
-static Fl_Slider *playTrackbar=(Fl_Slider *)0;
+static Fl_Button *toggleZoomWnd=(Fl_Button *)0;
+static Fl_Value_Slider *playTrackbar=(Fl_Value_Slider *)0;
 static Fl_Input  *fileNameEdit=(Fl_Input *)0;
 static Fl_Box    *uavvLibVerLabel = (Fl_Box *)0;
 static Fl_Box    *uavvStreamStateLabel = (Fl_Box *)0;
+static Fl_Slider *zoomSlider=(Fl_Slider *)0;
+static Fl_Box    *zoomLabel = (Fl_Box *)0;
 
 static Fl_Image *image_open() {
     static Fl_Image *image = new Fl_RGB_Image(idata_open, 20, 20, 4, 0);
@@ -71,6 +78,11 @@ static Fl_Image *image_toggle() {
     static Fl_Image *image = new Fl_RGB_Image(idata_toggle, 32, 32, 4, 0);
     return image;
 }
+
+static Fl_Image *image_zoomin() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_zoomin, 32, 32, 4, 0);
+  return image;
+}
   
 
 UIController::UIController() 
@@ -79,13 +91,15 @@ UIController::UIController()
     , videoPlayer(nullptr)
     , imageFrameBuffer(nullptr)
     , renderWndVisible(1)
+    , zoomWndVisible(1)
+    , zoomState(ZoomState::ZoomOff)
+    , zoomValue(ZoomValue::x1)
 {
-
+    
 }
 
 UIController::~UIController()
 {
-
     uavv::IUAVVInterface::DestroyImageHandle(imageFrameBuffer);
     uint8_t* tmp = static_cast<uint8_t*>(imageFrameBuffer);
     delete [] tmp;
@@ -131,12 +145,20 @@ void UIController::InitUIComponents()
     int rY = MAIN_OFFSET_Y + mainWnd->decorated_h() + RENDER_OFFSET_Y;
     renderWnd->resize(rX, rY, rW, rH);
     renderWnd->SetUIController(this);
+
+
+    shared_ptr<ZoomWnd> zoomTmp(UIController::makeZoomPanel(this, FRAME_WIDTH, FRAME_HEIGHT, "Zoom Image"));
+    zoomWnd = std::move(zoomTmp);
+
+    if ((Fl::w() < zoomWnd->w()) || (Fl::h() < zoomWnd->h()))
+        zoomWnd->size(Fl::w(), Fl::h());
 }
 
 void UIController::ShowMainWindow(int argc, char *argv[])
 {
     assert(mainWnd);
     assert(renderWnd);
+    assert(zoomWnd);
 
     if(!mainWnd)
     {
@@ -150,9 +172,20 @@ void UIController::ShowMainWindow(int argc, char *argv[])
         return;
     }
 
+    if(!zoomWnd)
+    {
+        fl_message("ERROR: Zoom image window is not initialized");
+        return;
+    }
+
     mainWnd->show(argc, argv);
+    
     if(renderWndVisible)
         renderWnd->show();
+
+    if(zoomWndVisible)
+        zoomWnd->show();
+
 }
 
 void UIController::SetupGLWindowUpdateTest()
@@ -276,7 +309,12 @@ bool UIController::IsVideoRenderVisible() const
     return renderWndVisible;
 }
 
-void UIController::UpdateRenderVisibility()
+bool UIController::IsZoomWindowVisible() const
+{
+    return zoomWndVisible;
+}
+
+void UIController::UpdateRenderWindowVisibility()
 {
     assert(renderWnd);
     if(!renderWnd)
@@ -286,6 +324,18 @@ void UIController::UpdateRenderVisibility()
         renderWnd->show();
     else
         renderWnd->hide();
+}
+
+void UIController::UpdateZoomWindowVisibility()
+{
+    assert(zoomWnd);
+    if(!zoomWnd)
+        return;
+
+    if(zoomWndVisible)
+        zoomWnd->show();
+    else
+        zoomWnd->hide();
 }
 
 const std::string& UIController::GetLibraryVersionString()
@@ -307,7 +357,7 @@ void UIController::ToggleRender()
 {
     renderWndVisible = !renderWndVisible;
     toggleVideoWnd->value(IsVideoRenderVisible() ? 1 : 0);
-    UpdateRenderVisibility();
+    UpdateRenderWindowVisibility();
 }
 
 /*static*/ void UIController::OnToggleRender(Fl_Widget* sender, void* pUserData)
@@ -320,6 +370,25 @@ void UIController::ToggleRender()
     }
 
     controller->ToggleRender();
+}
+
+void UIController::ToggleZoom()
+{
+    zoomWndVisible = !zoomWndVisible;
+    toggleZoomWnd->value(IsZoomWindowVisible() ? 1 : 0);
+    UpdateZoomWindowVisibility();
+}
+
+/*static*/ void UIController::OnToggleZoom(Fl_Widget* sender, void* pUserData)
+{
+    assert(pUserData);
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->ToggleZoom();
 }
 
 void UIController::FirstFrame()
@@ -483,7 +552,11 @@ void UIController::LastFrame()
 
 void UIController::SliderPosChange(double pos)
 {
-    videoPlayer->SlideToPosition(pos);
+    if(videoPlayer->SlideToPosition(pos))
+    {
+        playBtn->show();
+        pauseBtn->hide();
+    }
 }
 
 /*static*/ void UIController::OnSliderPosChange(Fl_Widget* widget, void* pUserData)
@@ -495,8 +568,56 @@ void UIController::SliderPosChange(double pos)
         return;
     }
 
-    Fl_Slider* slider = static_cast<Fl_Slider*>(widget);
+    Fl_Value_Slider* slider = static_cast<Fl_Value_Slider*>(widget);
     controller->SliderPosChange(slider->value());
+}
+
+const std::string& UIController::GetZoomValueString()
+{
+    switch(zoomValue)
+    {
+     case ZoomValue::x2:
+        zoomValueStr = "x2";
+        break;
+    case ZoomValue::x4:
+        zoomValueStr = "x4";
+        break;
+    case ZoomValue::x8:
+        zoomValueStr = "x8";
+        break;
+    case ZoomValue::x16:
+        zoomValueStr = "x16";
+        break;
+    case ZoomValue::x32:
+        zoomValueStr = "x32";
+        break;
+    case ZoomValue::x64:
+        zoomValueStr = "x64";
+        break;   
+    default:
+        zoomValueStr = "x1";
+    }
+
+    return zoomValueStr;
+}
+
+void UIController::ZoomSliderPosChange(double pos)
+{
+    zoomValue = static_cast<ZoomValue>(static_cast<int>(pos));
+    zoomLabel->label(GetZoomValueString().c_str());
+}
+
+/*static*/ void UIController::OnZoomSliderPosChange(Fl_Widget* widget, void* pUserData)
+{
+    assert(pUserData);
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    Fl_Slider* slider = static_cast<Fl_Slider*>(widget);
+    controller->ZoomSliderPosChange(slider->value());
 }
 
 /*static*/ MainWnd* UIController::makeMainPanel(UIController* controller) 
@@ -572,14 +693,27 @@ void UIController::SliderPosChange(double pos)
         } // Fl_Button* pauseBtn
 
         { 
-            playTrackbar = new Fl_Slider(25, 75, 490, 27);
+            playTrackbar = new Fl_Value_Slider(20, 75, 495, 27);
             playTrackbar->type(5);
             playTrackbar->box(FL_FLAT_BOX);
+            playTrackbar->minimum(0.0);
             playTrackbar->maximum(100.0);
             playTrackbar->step(0.01);
             playTrackbar->callback(UIController::OnSliderPosChange, static_cast<void*>(controller));
         } // Fl_Slider* playTrackbar
         
+        { 
+            toggleZoomWnd = new Fl_Button(425, 125, 40, 40);
+            toggleZoomWnd->type(1);
+            toggleZoomWnd->down_box(FL_DOWN_BOX);
+            toggleZoomWnd->selection_color((Fl_Color)55);
+            toggleZoomWnd->image( image_zoomin() );
+            toggleZoomWnd->align(Fl_Align(512));
+            toggleZoomWnd->value(controller->IsZoomWindowVisible() ? 1 : 0);
+            toggleZoomWnd->callback(UIController::OnToggleZoom, static_cast<void*>(controller));
+            toggleZoomWnd->tooltip("Show/Hide zoom window");
+        } // Fl_Button* toggleVideoWnd
+
         { 
             toggleVideoWnd = new Fl_Button(475, 125, 40, 40);
             toggleVideoWnd->type(1);
@@ -597,14 +731,14 @@ void UIController::SliderPosChange(double pos)
             uavvLibVerLabel->labeltype(FL_NORMAL_LABEL);
             uavvLibVerLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
             uavvLibVerLabel->labelsize(10);
-        } // Fl_Button* toggleVideoWnd
+        } // Fl_Box* uavvLibVerLabel
 
         { 
             uavvStreamStateLabel = new Fl_Box( FL_FLAT_BOX, 110, 170, 100, 20, nullptr);
             uavvStreamStateLabel->labeltype(FL_NORMAL_LABEL);
             uavvStreamStateLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
             uavvStreamStateLabel->labelsize(10);
-        } // Fl_Button* toggleVideoWnd
+        } // Fl_Box* uavvStreamStateLabel
 
         main_panel->set_non_modal();
         main_panel->size_range(540, 190, 540, 190);
@@ -636,8 +770,67 @@ void UIController::SliderPosChange(double pos)
     return w;
 }
 
+/*static*/ ZoomWnd* UIController::makeZoomPanel(UIController* controller, int W, int H, const char* l)
+{
+    ZoomWnd* w;
+    {
+        Fl_Group* MainView;
+        ZoomWnd* z = new ZoomWnd(W, H, l);
+        w = z;
+        z->box(FL_FLAT_BOX);
+        z->labeltype(FL_NO_LABEL);
+        z->labelsize(14);
+        z->when(FL_WHEN_RELEASE);
+        z->callback(UIController::OnToggleZoom, static_cast<void*>(controller));
+        z->set_non_modal();
+
+        { 
+            { 
+                zoomSlider = new Fl_Slider(50, 5, 450, 27, "Zoom");
+                zoomSlider->type(5);
+                zoomSlider->box(FL_FLAT_BOX);
+                zoomSlider->minimum(static_cast<int>(ZoomValue::x1));
+                zoomSlider->maximum(static_cast<int>(ZoomValue::ZoomValueLast) - 1);
+                zoomSlider->step(1);
+                zoomSlider->value(static_cast<int>(ZoomValue::x1));
+                zoomSlider->callback(UIController::OnZoomSliderPosChange, static_cast<void*>(controller));
+                zoomSlider->align(Fl_Align(FL_ALIGN_LEFT));
+            } // Fl_Slider* zoom
+            { 
+                zoomLabel = new Fl_Box( FL_FLAT_BOX, 520, 5, 50, 20, controller->GetZoomValueString().c_str());
+                zoomLabel->labeltype(FL_NORMAL_LABEL);
+                zoomLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
+            } // Fl_Box* zoomLabel
+            { 
+                MainView = new Fl_Group(10, 35, W-20, H-45);
+                { 
+                    ZoomView* zoomView = new ZoomView(10, 35, W-20, H-45, "This is the Zoom image window");
+                    zoomView->box(FL_NO_BOX);
+                    zoomView->color(FL_BACKGROUND_COLOR);
+                    zoomView->selection_color(FL_BACKGROUND_COLOR);
+                    zoomView->labeltype(FL_NORMAL_LABEL);
+                    zoomView->labelfont(0);
+                    zoomView->labelsize(14);
+                    zoomView->labelcolor(FL_FOREGROUND_COLOR);
+                    zoomView->align(Fl_Align(FL_ALIGN_CENTER|FL_ALIGN_INSIDE));
+                    zoomView->when(FL_WHEN_RELEASE);
+                    Fl_Group::current()->resizable(zoomView);
+                } // ZoomView* zoomView
+                MainView->end();
+            } // Fl_Group* MainView
+        } // Fl_Group* o
+        z->end();
+        z->size_range(W, H, 0, 0);
+        z->resizable(MainView);
+    } // Fl_Double_Window* mainWindow
+    return w;
+}
+
 void UIController::ExitApplication()
 {
+    if(zoomWnd->shown())
+        zoomWnd->hide();
+
     if(renderWnd->shown())
         renderWnd->hide();
 
@@ -760,4 +953,12 @@ void UIController::UpdatePosition(float pos)
 void UIController::UpdatePlayerControls()
 {
     UpdatePosition(videoPlayer->GetCurrentPosition());
+}
+
+void UIController::OnRenderMouseDown(int event, int x, int y)
+{
+    if(zoomState == ZoomState::ZoomIn)
+    {
+        // TODO process zoom click
+    }
 }

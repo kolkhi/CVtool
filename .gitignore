@@ -7,3 +7,4 @@ uavv_video.lic
 .DS_Store
 res/main_panel.cxx
 res/main_panel.h
+res/run_fluid.bat
