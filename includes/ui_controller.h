@@ -7,6 +7,7 @@
 #include <render_panel.h>
 #include <zoom_panel.h>
 #include <uavv_image.h>
+#include <data_structures.h>
 
 #define FRAME_WIDTH             800
 #define FRAME_HEIGHT            600
@@ -15,9 +16,6 @@ using namespace std;
 
 namespace cvtool
 {
-    
-    enum class ZoomState { ZoomOff = 0, ZoomIn = 1 };
-    enum class ZoomValue { x1 = 0, x2, x4, x8, x16, x32, x64, ZoomValueLast };
     class VideoPlayer;
     class UIController
     {
@@ -68,7 +66,6 @@ namespace cvtool
             bool IsVideoRenderVisible() const;
             bool IsZoomWindowVisible() const;
             ZoomValue GetCurrentZoomValue() const;
-            int GetZoomNumber() const;
             void SetupGLWindowUpdateTest();
             void SetupVideoPlayer();
             
@@ -88,6 +85,7 @@ namespace cvtool
 
             void ExitApplication();
             void UpdateGLFrameBufferTest();
+            void UpdateCurrentZoomValue(ZoomValue newValue);
             void ImageBufferReceived(UAVV_IMAGE img, int delay, float pos);
             void UpdatePosition(float pos);
             void UpdatePlayerControls();
@@ -98,6 +96,7 @@ namespace cvtool
 
             static int RunApplication(int argc, char *argv[]);
             static void SetupSystemSettings();
+            static int GetZoomScaleByValue(ZoomValue val);
 
             // widget event static handlers
             static void OnPickFile(Fl_Widget*, void*);

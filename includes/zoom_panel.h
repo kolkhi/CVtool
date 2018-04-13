@@ -9,6 +9,7 @@
 
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl.H>
+#include <data_structures.h>
 
 /**
  Video zoom window

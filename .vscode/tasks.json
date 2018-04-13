@@ -48,7 +48,9 @@
           "-DWIN32",
           "-DUSE_OPENGL32",
           "-D_LARGEFILE_SOURCE",
-          "-D_LARGEFILE64_SOURCE"
+          "-D_LARGEFILE64_SOURCE",
+          "-static",
+          "-lpthread"
         ]
       },
       "linux": {
@@ -190,7 +192,9 @@
           "-DWIN32",
           "-DUSE_OPENGL32",
           "-D_LARGEFILE_SOURCE",
-          "-D_LARGEFILE64_SOURCE"
+          "-D_LARGEFILE64_SOURCE",
+          "-static",
+          "-lpthread"
         ]
       },
       "linux": {

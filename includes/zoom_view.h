@@ -18,6 +18,7 @@
 
 namespace cvtool
 {
+    class UIController; 
     class ZoomView : public Fl_Gl_Window 
     {
 
@@ -28,15 +29,22 @@ namespace cvtool
         int zoomParam;
         float mouseScaledX;
         float mouseScaledY;
+        bool updateZoomValue;
+        UIController* pController;
 
     protected:
         void draw();
+        int calculateOffset(int mousePos, int centerPos);
+        bool isOffsetOutOfBoundary(int offset, int boundary);
+        int moveOffsetToClosetBoundary(int offset, int boundary);
+        void findBestZoomParameterAndUpdate(int mouseX, int mouseY, int centerX, int centerY, int width, int height);
 
     public:
         ZoomView(int X, int Y, int W, int H, const char* l = 0);
         void UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, int zoomVal);
         void MakeZoom(int zoomVal);
         void CleanUp();
+        void SetUIController(UIController* controller);
     };
 }
 

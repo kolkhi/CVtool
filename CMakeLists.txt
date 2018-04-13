@@ -20,6 +20,8 @@ target_link_libraries(CVtool fltk_gl)
 
 if(WIN32)
     target_link_libraries(CVtool ws2_32)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
+    target_link_libraries(CVtool pthread)
 endif()
 
 if(APPLE)

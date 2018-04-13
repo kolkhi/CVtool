@@ -17,8 +17,10 @@ using namespace uavv;
  Window for zoom
 */
 
-ZoomWnd::ZoomWnd(int W, int H, const char* l) :    
-            Fl_Double_Window(W, H, l)
+ZoomWnd::ZoomWnd(int W, int H, const char* l) 
+            : Fl_Double_Window(W, H, l)
+            , pController(nullptr)
+            , zoomView(nullptr)
 {
     
 }
@@ -39,7 +41,12 @@ void ZoomWnd::SetUIController(UIController* controller)
 
 void ZoomWnd::SetView(ZoomView* view)
 {
+    assert(view);
+    if(!view)
+        return;
+
     zoomView = view;
+    zoomView->user_data(static_cast<void*>(this));
 }
 
 void ZoomWnd::ZoomChanged(int zoomParam)

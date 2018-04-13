@@ -155,6 +155,8 @@ void UIController::InitUIComponents()
 
     if ((Fl::w() < zoomWnd->w()) || (Fl::h() < zoomWnd->h()))
         zoomWnd->size(Fl::w(), Fl::h());
+
+    zoomWnd->SetUIController(this);
 }
 
 void UIController::ShowMainWindow(int argc, char *argv[])
@@ -382,7 +384,7 @@ void UIController::ToggleZoom()
     if(zoomWndVisible)
     {
         zoomState = ZoomState::ZoomIn;
-        renderWnd->cursor(image_zoomin_mouse(), 0, 0);
+        renderWnd->cursor(image_zoomin_mouse(), 10, 10);
     }    
     else
     {
@@ -620,13 +622,7 @@ void UIController::ZoomSliderPosChange(double pos)
     zoomValue = static_cast<ZoomValue>(static_cast<int>(pos));
     zoomLabel->label(GetZoomValueString().c_str());
     
-    zoomWnd->ZoomChanged(GetZoomNumber());
-}
-
-int UIController::GetZoomNumber() const
-{
-    int zoomParam = 1 << static_cast<int>(zoomValue);
-    return zoomParam;
+    zoomWnd->ZoomChanged(UIController::GetZoomScaleByValue(zoomValue));
 }
 
 /*static*/ void UIController::OnZoomSliderPosChange(Fl_Widget* widget, void* pUserData)
@@ -837,6 +833,7 @@ int UIController::GetZoomNumber() const
                     zoomView->labelcolor(FL_FOREGROUND_COLOR);
                     zoomView->align(Fl_Align(FL_ALIGN_CENTER|FL_ALIGN_INSIDE));
                     zoomView->when(FL_WHEN_RELEASE);
+                    zoomView->SetUIController(controller);
                     Fl_Group::current()->resizable(zoomView);
                 } // ZoomView* zoomView
                 MainView->end();
@@ -991,7 +988,7 @@ void UIController::OnRenderMouseDown(int event, float scaledX, float scaledY)
     if(zoomState == ZoomState::ZoomIn)
     {
         const UAVV_IMAGE buf = static_cast<const UAVV_IMAGE>(renderWnd->GetCurrentFrameCopy());
-        zoomWnd->UpdateGLFrame(buf, scaledX, scaledY, GetZoomNumber());
+        zoomWnd->UpdateGLFrame(buf, scaledX, scaledY, UIController::GetZoomScaleByValue(zoomValue));
         IUAVVInterface::DestroyImageHandle(buf);
     }
 }
@@ -999,4 +996,30 @@ void UIController::OnRenderMouseDown(int event, float scaledX, float scaledY)
 ZoomValue UIController::GetCurrentZoomValue() const
 {
     return zoomValue;
+}
+
+void UIController::UpdateCurrentZoomValue(ZoomValue newValue)
+{
+    ZoomValue val = newValue;
+    assert(val >= ZoomValue::x1 && val < ZoomValue::ZoomValueLast);
+
+    if(val < ZoomValue::x1)
+    {
+        val = ZoomValue::x1;
+    }
+    
+    if(val >= ZoomValue::ZoomValueLast)
+    {
+        val = static_cast<ZoomValue>(static_cast<int>(ZoomValue::ZoomValueLast) - 1);
+    }
+
+    zoomValue = val;
+    zoomLabel->label(GetZoomValueString().c_str());
+    zoomSlider->value(static_cast<double>(static_cast<int>(zoomValue)));
+}
+
+/*static*/ int UIController::GetZoomScaleByValue(ZoomValue val)
+{
+    int zoomParam = 1 << static_cast<int>(val);
+    return zoomParam;
 }
