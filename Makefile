@@ -9,6 +9,7 @@ BINARY = $(TEST_BIN1)
 # Include common macros
 include ./common.mak
 
+
 # Specify local settings
 ifeq ($(ARCH),win32)
     $(BINARY):  LDFLAGS += -static -static-libgcc -static-libstdc++
@@ -59,7 +60,7 @@ zoom_panel.o:  ./src/zoom_panel.cxx
 zoom_view.o:  ./src/zoom_view.cxx
 	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 
-.PHONY: clean
+.PHONY: clear
 
-clean:
-	 rm $(call GetObj,$(TEST_SRC1))
+clear:
+	 $(RM) $(call GetObj,$(TEST_SRC1))
