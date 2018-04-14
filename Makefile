@@ -13,11 +13,11 @@ include ./common.mak
 ifeq ($(ARCH),win32)
     $(BINARY):  LDFLAGS += -static -static-libgcc -static-libstdc++
     $(BINARY):  LDLIBS += -liconv
-	CFLAGS += -mwindows
+    CFLAGS += -mwindows
 endif
 
 ifeq ($(ARCH),linux)
-	$(BINARY):  LDFLAGS += -L//usr/lib/x86_64-linux-gnu
+    $(BINARY):  LDFLAGS += -L//usr/lib/x86_64-linux-gnu
 endif
 
 $(BINARY):  LDLIBS += $(FLTK_LIBS)
