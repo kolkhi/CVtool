@@ -91,11 +91,11 @@ ifeq ($(ARCH),win32)
     endif
 endif
 ifeq ($(ARCH),mac)
-    LOCALDIR = $(TOPDIR)/local/mac
+    LOCALDIR = $(TOPDIR)
 endif
 ifeq ($(ARCH),linux)
     ifeq ($(MACHINE),x64)
-        LOCALDIR = $(TOPDIR)/local/linux64
+        LOCALDIR = $(TOPDIR)
     endif
     ifeq ($(MACHINE),armv7l)
         LOCALDIR = $(TOPDIR)/local/armv7l
