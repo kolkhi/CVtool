@@ -13,13 +13,13 @@ include ./common.mak
 ifeq ($(ARCH),win32)
     $(BINARY):  LDFLAGS += -static -static-libgcc -static-libstdc++
     $(BINARY):  LDLIBS += -liconv
+	CFLAGS += -mwindows
 endif
 $(BINARY):  LDLIBS += $(FLTK_LIBS)
 $(BINARY):  LDLIBS += -lstdc++ -pthread -lm libuavv_video.dll
 
 CFLAGS += -I$(LOCALDIR)/includes
 CFLAGS += -I$(LOCALDIR)/fltk
-CFLAGS += -mwindows
 CFLAGS += -m64
 CFLAGS += -DUSE_OPENGL32
 
