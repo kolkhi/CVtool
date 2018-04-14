@@ -15,6 +15,11 @@ ifeq ($(ARCH),win32)
     $(BINARY):  LDLIBS += -liconv
 	CFLAGS += -mwindows
 endif
+
+ifeq ($(ARCH),linux)
+	$(BINARY):  LDFLAGS += -L//usr/lib/x86_64-linux-gnu
+endif
+
 $(BINARY):  LDLIBS += $(FLTK_LIBS)
 $(BINARY):  LDLIBS += -lstdc++ -pthread -lm libuavv_video.dll
 
