@@ -50,7 +50,8 @@
           "-D_LARGEFILE_SOURCE",
           "-D_LARGEFILE64_SOURCE",
           "-static",
-          "-lpthread"
+          "-lpthread",
+          "libuavv_video.dll"
         ]
       },
       "linux": {
@@ -90,7 +91,8 @@
           "-m64",
           "-DUSE_OPENGL32",
           "-D_LARGEFILE_SOURCE",
-          "-D_LARGEFILE64_SOURCE"
+          "-D_LARGEFILE64_SOURCE",
+          "libuavv_video.dll"
         ]
       },
       "osx": {
@@ -132,7 +134,8 @@
           "-ldl",
           "-DUSE_OPENGL32",
           "-D_LARGEFILE_SOURCE",
-          "-D_LARGEFILE64_SOURCE"
+          "-D_LARGEFILE64_SOURCE",
+          "libuavv_video.dll"
         ]
       },
       "group": {

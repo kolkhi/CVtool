@@ -35,11 +35,11 @@ using namespace uavv;
 
 /*static*/ bool IUAVVInterface::InitFunctionDefaultCallbacks()
 {
-    pfnSetLicenseDirectory = (fnSetLicenseDirectory)(xloader_lookup_symbol(uavvHandle, "uavv_video_set_license_directory"));
+    pfnSetLicenseDirectory = &uavv_video_set_license_directory;//(fnSetLicenseDirectory)(xloader_lookup_symbol(uavvHandle, "uavv_video_set_license_directory"));
     if(pfnSetLicenseDirectory == nullptr)
         return false;
 
-    pfnGetLibraryVersion = (fnGetLibraryVersion)(xloader_lookup_symbol(uavvHandle, "uavv_video_version"));
+    pfnGetLibraryVersion = &uavv_video_version;//(fnGetLibraryVersion)(xloader_lookup_symbol(uavvHandle, "uavv_video_version"));
     if(pfnGetLibraryVersion == nullptr)
         return false;
 
