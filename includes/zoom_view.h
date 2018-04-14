@@ -36,7 +36,7 @@ namespace cvtool
         void draw();
         int calculateOffset(int mousePos, int centerPos);
         bool isOffsetOutOfBoundary(int offset, int boundary);
-        int moveOffsetToClosetBoundary(int offset, int boundary);
+        int moveOffsetToClosestBoundary(int offset, int boundary);
         void findBestZoomParameterAndUpdate(int mouseX, int mouseY, int centerX, int centerY, int width, int height);
 
     public:

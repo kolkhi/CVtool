@@ -134,10 +134,10 @@ void ZoomView::draw()
         }
 
         if(isOffsetOutOfBoundary(offsetX, width))
-            offsetX = moveOffsetToClosetBoundary(offsetX, width);
+            offsetX = moveOffsetToClosestBoundary(offsetX, width);
 
         if(isOffsetOutOfBoundary(offsetY, height))
-            offsetY = moveOffsetToClosetBoundary(offsetY, height);
+            offsetY = moveOffsetToClosestBoundary(offsetY, height);
 
         updateZoomValue = false;
             
@@ -202,7 +202,7 @@ bool ZoomView::isOffsetOutOfBoundary(int offset, int boundary)
     return false;
 }
 
-int ZoomView::moveOffsetToClosetBoundary(int offset, int boundary)
+int ZoomView::moveOffsetToClosestBoundary(int offset, int boundary)
 {
     // calclate maximum offset of the image from the top and right boundaries (minimum offset from left and bottom boundaries is 0 )
     int minOffset = 0;
