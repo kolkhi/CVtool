@@ -205,7 +205,7 @@ void UIController::SetupVideoPlayer()
     videoPlayer = std::move(tmpPlayer);
 
     VideoPlayerCallbackInfo info;
-    info.pfnImageCallback = UIController::ImageDecodingNotification;
+    info.pfnImageCallbackNotification = UIController::ImageDecodingNotification;
     info.pfnPositionChangedNotification =  UIController::PositionChangeNotification;
     info.pUserData = static_cast<void*>(this);
     videoPlayer->SetCallbackInfo(info);    
@@ -258,7 +258,7 @@ void UIController::FileNameChanged()
     if(fileSource.size() > 0)
         videoPlayer->InitPlayback(fileSource);
 
-    FirstFrame();
+    //FirstFrame();
 }
 
 /*static*/ void UIController::OnChangeFileName(Fl_Widget*, void* pUserData) 
@@ -944,9 +944,6 @@ void UIController::UpdateGLFrameBufferTest()
 void UIController::ImageBufferReceived(UAVV_IMAGE img, int delay, float pos)
 {
     renderWnd->UpdateGLFrame(img);
-    
-    if(videoPlayer->IsPlaying())
-        videoPlayer->SetCurrentPosition(pos);
 
     Fl::awake();
 }

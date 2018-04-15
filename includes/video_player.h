@@ -5,6 +5,7 @@
 #include <string>
 #include <atomic>
 #include <thread>
+#include <vector>
 
 namespace cvtool
 {
@@ -16,13 +17,13 @@ namespace cvtool
 
     struct VideoPlayerCallbackInfo
     {
-        fnImageCallback* pfnImageCallback;
+        fnImageCallback* pfnImageCallbackNotification;
         fnPositionChangedNotification* pfnPositionChangedNotification;
         USER_DATA pUserData;
 
         void Reset()
         {
-            pfnImageCallback = nullptr;
+            pfnImageCallbackNotification = nullptr;
             pfnPositionChangedNotification = nullptr;
             pUserData = nullptr;   
         }
@@ -37,7 +38,9 @@ namespace cvtool
             std::atomic<bool> isPaused;
             std::atomic<bool> isDecoding;
             std::string sourceFile;
-            float currentPosition;
+            std::vector<float> positionsHistory;
+            bool updatePositionOnDecode;
+            bool imageDecoded;
 
             std::thread decodingThread;
             VideoPlayerCallbackInfo callbackInfo;
@@ -45,12 +48,14 @@ namespace cvtool
         private:
             // private callbacks
             static int abort_cb(USER_DATA v);
+            static void image_cb(UAVV_IMAGE img, int delay, float pos, USER_DATA v);
 
-            // video iterface managemange routines
+            // video interface managemange routines
             void StartDecoding();
             void StopDecoding();
             void PauseDecoding();
-            bool GoToPos(float pos, bool notifyObserver = true);
+            bool GoToPos(float pos, int timeOut, bool notifyObserver = true);
+            void DecodeNextImage(int timeOut, bool notifyObserver = true);
 
             void ResetPlayer();
             void ResetCancelState();
@@ -59,6 +64,8 @@ namespace cvtool
             bool IsDecodeInitialized() const;
             int IsDecodingCancelled() const;
 
+            void SetCurrentPosition(float);
+            void FrameReceived(UAVV_IMAGE img, int delay, float pos);
         public:
             VideoPlayer();
             ~VideoPlayer();
@@ -77,7 +84,6 @@ namespace cvtool
             bool IsPlaying() const;
             bool IsPaused() const;
             float GetCurrentPosition() const;
-            void SetCurrentPosition(float);
 
             void SetCallbackInfo(const VideoPlayerCallbackInfo& info);
             bool InitPlayback(const std::string& file);
