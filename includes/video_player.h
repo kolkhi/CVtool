@@ -13,17 +13,21 @@ namespace cvtool
     using fnImageCallback = uavv::fnImageDecodeCallback;
     using fnCancelCallback = uavv::fnAbortCallback;
 
+    using fnKlvDataCallback = uavv::fnKlvDataCallback;
+
     using USER_DATA = uavv::UAVV_USER_DATA;
 
     struct VideoPlayerCallbackInfo
     {
         fnImageCallback* pfnImageCallbackNotification;
+        fnKlvDataCallback* pfnGetKlvDataNotification;
         fnPositionChangedNotification* pfnPositionChangedNotification;
         USER_DATA pUserData;
 
         void Reset()
         {
             pfnImageCallbackNotification = nullptr;
+            pfnGetKlvDataNotification = nullptr;
             pfnPositionChangedNotification = nullptr;
             pUserData = nullptr;   
         }
@@ -49,6 +53,7 @@ namespace cvtool
             // private callbacks
             static int abort_cb(USER_DATA v);
             static void image_cb(UAVV_IMAGE img, int delay, float pos, USER_DATA v);
+            static void klv_cb(UAVV_KLV klv, USER_DATA v);
 
             // video interface managemange routines
             void StartDecoding();
@@ -66,6 +71,7 @@ namespace cvtool
 
             void SetCurrentPosition(float);
             void FrameReceived(UAVV_IMAGE img, int delay, float pos);
+            void KlvDataReceived(UAVV_KLV klv);
         public:
             VideoPlayer();
             ~VideoPlayer();

@@ -17,10 +17,17 @@ using namespace uavv;
 /*static*/ fnGetImageHeight IUAVVInterface::pfnGetImageHeight = nullptr;
 /*static*/ fnSetAbortCallback IUAVVInterface::pfnSetAbortCallback = nullptr;
 /*static*/ fnSetImageDecodeCallback IUAVVInterface::pfnSetImageDecodeCallback = nullptr;
+/*static*/ fnSetKlvDataCallback IUAVVInterface::pfnSetKlvDataCallback = nullptr; 
 /*static*/ fnCopyImageHandle IUAVVInterface::pfnCopyImageHandle = nullptr;
 /*static*/ fnCreateImageHandle IUAVVInterface::pfnCreateImageHandle = nullptr;
 /*static*/ fnDestroyImageHandle IUAVVInterface::pfnDestroyImageHandle = nullptr;
 /*static*/ fnGoToPosition IUAVVInterface::pfnGoToPosition = nullptr;
+/*static*/ fnKlvGetTimeStamp IUAVVInterface::pfnKlvGetTimeStamp = nullptr;
+/*static*/ fnKlvSize IUAVVInterface::pfnKlvSize = nullptr;
+/*static*/ fnKlvItem IUAVVInterface::pfnKlvItem = nullptr;
+/*static*/ fnKlvItemName IUAVVInterface::pfnKlvItemName = nullptr;
+/*static*/ fnKlvGetString IUAVVInterface::pfnKlvGetString = nullptr;
+/*static*/ fnKlvGetError IUAVVInterface::pfnKlvGetError = nullptr;
 
 /*static*/ bool IUAVVInterface::LoadAndInitLibrary()
 {
@@ -83,6 +90,10 @@ using namespace uavv;
     if(pfnSetImageDecodeCallback == nullptr)
         return false;
 
+    pfnSetKlvDataCallback = (fnSetKlvDataCallback)(xloader_lookup_symbol(uavvHandle, "uavv_video_set_klv_hook"));
+    if(pfnSetKlvDataCallback == nullptr)
+        return false;
+
     pfnCopyImageHandle = (fnCopyImageHandle)(xloader_lookup_symbol(uavvHandle, "uavv_image_copy"));
     if(pfnCopyImageHandle == nullptr)
         return false;
@@ -98,7 +109,31 @@ using namespace uavv;
     pfnGoToPosition = (fnGoToPosition)(xloader_lookup_symbol(uavvHandle, "uavv_video_seek"));
     if(pfnGoToPosition == nullptr)
         return false;
-        
+
+    // klv functions
+    pfnKlvGetTimeStamp = (fnKlvGetTimeStamp)(xloader_lookup_symbol(uavvHandle, "uavv_klv_get_timestamp"));
+    if(pfnKlvGetTimeStamp == nullptr)
+        return false;
+
+    pfnKlvSize = (fnKlvSize)(xloader_lookup_symbol(uavvHandle, "uavv_klv_size"));
+    if(pfnKlvSize == nullptr)
+        return false;
+
+    pfnKlvItem = (fnKlvItem)(xloader_lookup_symbol(uavvHandle, "uavv_klv_item"));
+    if(pfnKlvItem == nullptr)
+        return false;
+
+    pfnKlvItemName = (fnKlvItemName)(xloader_lookup_symbol(uavvHandle, "uavv_klv_item_name"));
+    if(pfnKlvItemName == nullptr)
+        return false;
+    
+    pfnKlvGetString = (fnKlvGetString)(xloader_lookup_symbol(uavvHandle, "uavv_klv_get_str"));
+    if(pfnKlvGetString == nullptr)
+        return false;
+    
+    pfnKlvGetError = (fnKlvGetError)(xloader_lookup_symbol(uavvHandle, "uavv_klv_get_error"));
+    if(pfnKlvGetError == nullptr)
+        return false;
 
     return true;
 }
@@ -218,6 +253,15 @@ using namespace uavv;
     pfnSetImageDecodeCallback(handle, callbackPtr, pUserData);
 }
 
+/*static*/ void IUAVVInterface::SetKlvDataCallback(UAVV_VIDEO handle, fnKlvDataCallback* callbackPtr, UAVV_USER_DATA pUserData)
+{
+    assert(pfnSetKlvDataCallback);
+    if(!pfnSetKlvDataCallback)
+        return;
+
+    pfnSetKlvDataCallback(handle, callbackPtr, pUserData);
+}
+
 /*static*/ UAVV_IMAGE IUAVVInterface::CreateImageHandle(int width, int height)
 {
     assert(pfnCreateImageHandle);
@@ -254,3 +298,58 @@ using namespace uavv;
     pfnGoToPosition(handle, pos);
 }
             
+/*static*/ long long IUAVVInterface::KlvGetTimeStamp(const UAVV_KLV klv)
+{
+    assert(pfnKlvGetTimeStamp);
+    if(!pfnKlvGetTimeStamp)
+        return 0;
+
+    return pfnKlvGetTimeStamp(klv); 
+}
+
+/*static*/ int IUAVVInterface::KlvSize(const UAVV_KLV klv)
+{
+    assert(pfnKlvSize);
+    if(pfnKlvSize == nullptr)
+        return 0;
+
+    return pfnKlvSize(klv);
+}
+
+/*static*/ uavv_klv_key_t IUAVVInterface::KlvItem(const UAVV_KLV klv, int offset)
+{
+    assert(pfnKlvItem);
+    if(pfnKlvItem == nullptr)
+        return ((uavv_klv_key_t)-1);
+
+    return pfnKlvItem(klv, offset);
+}
+
+/*static*/ std::string IUAVVInterface::KlvItemName(uavv_klv_key_t key)
+{
+    assert(pfnKlvItemName);
+    if(pfnKlvItemName == nullptr)
+        return "";
+
+    const char* itemName = pfnKlvItemName(key);
+    return std::string(itemName);
+}
+
+/*static*/ std::string IUAVVInterface::KlvGetString(const UAVV_KLV klv, uavv_klv_key_t key)
+{
+    assert(pfnKlvGetString);
+    if(pfnKlvGetString == nullptr)
+        return "";
+
+    const char* itemString = pfnKlvGetString(klv, key);
+    return std::string(itemString);
+}
+
+/*static*/ bool IUAVVInterface::KlvIsInErrorState(const UAVV_KLV klv, uavv_klv_key_t key)
+{
+    assert(pfnKlvGetError);
+    if(pfnKlvGetError == nullptr)
+        return false;
+    
+    return (pfnKlvGetError(klv, key) == UAVV_KLV_TRUE);
+}

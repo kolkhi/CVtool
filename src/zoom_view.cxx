@@ -38,6 +38,13 @@ ZoomView::ZoomView(int X, int Y, int W, int H, const char* l)
     mGlFrame.EnableInterpolation(false);
 }
 
+void ZoomView::ClearGLFrame()
+{
+    IUAVVInterface::DestroyImageHandle(mpFrame);
+    mpFrame = nullptr;
+    redraw();
+}
+
 void ZoomView::UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, int zoomVal)
 {
     // Keep a reference to the frame buffer
@@ -72,11 +79,8 @@ void ZoomView::draw()
     std::lock_guard<std::mutex> lock(imageMutex);
     
     // Update GL frame
-    if (mpFrame)
-    {
-        mGlFrame.copy(mpFrame);
-    }  
-
+    mGlFrame.copy(mpFrame);
+    
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -103,29 +107,9 @@ void ZoomView::draw()
         int mouseY = std::ceil(mouseScaledY * (float)height);
 
         // calculate offset from mouse click to center point
-        //int offsetX = (mouseX - std::ceil((float)centerX/(float)zoomParam));
-        //int offsetY = (mouseY - std::ceil((float)centerY/(float)zoomParam));
         int offsetX = calculateOffset(mouseX, centerX);
         int offsetY = calculateOffset(mouseY, centerY);
 
-
-        // calclate offset boundaries on the image from the top and right edges (minimum offset from left and bottom edges is (0,0) )
-        // int maxOffsetX = (width - std::ceil((float)width/(float)zoomParam));
-        // int maxOffsetY = (height - std::ceil((float)height/(float)zoomParam));
-    
-        // check if offset is out of boundary 
-        // if(offsetX < 0)
-        //    offsetX = 0;
-
-        // if(offsetY < 0)
-        //    offsetY = 0;
-
-        // if(offsetX > maxOffsetX)
-        //    offsetX = maxOffsetX;
-
-        // if(offsetY > maxOffsetY)
-        //    offsetY = maxOffsetY;
-        
         if(updateZoomValue && (isOffsetOutOfBoundary(offsetX, width) || isOffsetOutOfBoundary(offsetY, height)))
         {
             findBestZoomParameterAndUpdate(mouseX, mouseY, centerX, centerY, width, height);
@@ -151,11 +135,10 @@ void ZoomView::draw()
 
         // make offset of the clicked point toward center point of the window
         glTranslatef(-offsetX , -offsetY , 0.0);
-    
         
         // draw GL frame
         mGlFrame.draw();
-
+        
  #ifdef DEBUG_GL_ZOOM
         // draw red point at the center position 
         glColor3f(1.0,0.0,0.0);
@@ -260,7 +243,3 @@ void ZoomView::SetUIController(UIController* controller)
 {
     pController = controller;
 }
-
-//
-// End of "$Id: renderer_panel.fl 02 2018-03-29 18:21:11Z gsergia $".
-//

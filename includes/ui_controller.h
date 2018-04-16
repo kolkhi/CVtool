@@ -6,8 +6,10 @@
 #include <main_panel.h>
 #include <render_panel.h>
 #include <zoom_panel.h>
+#include <klv_panel.h>
 #include <uavv_image.h>
 #include <data_structures.h>
+#include <vector>
 
 #define FRAME_WIDTH             800
 #define FRAME_HEIGHT            600
@@ -25,11 +27,13 @@ namespace cvtool
         shared_ptr<MainWnd> mainWnd;
         shared_ptr<RenderWnd> renderWnd;
         shared_ptr<ZoomWnd> zoomWnd;
+        shared_ptr<KLVWnd> klvWnd;
         shared_ptr<VideoPlayer> videoPlayer;
 
         UAVV_IMAGE imageFrameBuffer;
         bool renderWndVisible;
         bool zoomWndVisible;
+        bool klvWndVisible;
 
         std::string uavvVer;
         std::string streamingState;
@@ -37,14 +41,17 @@ namespace cvtool
         ZoomState zoomState;
         ZoomValue zoomValue;
         std::string zoomValueStr;
+        std::vector<KLVItem> klvItems;
 
         protected:
             static MainWnd* makeMainPanel(UIController* controller);
             static RenderWnd* makeRenderPanel(UIController* controller, int W, int H, const char* l = 0);
             static ZoomWnd* makeZoomPanel(UIController* controller, int W, int H, const char* l = 0);
+            static KLVWnd* makeKlvPanel(UIController* controller, int W, int H, const char* l = 0);
 
             void UpdateRenderWindowVisibility();
             void UpdateZoomWindowVisibility();
+            void UpdateKlvWindowVisibility();
 
             UIController();
 
@@ -55,6 +62,9 @@ namespace cvtool
             const std::string& GetStreamingState();
             const std::string& GetZoomValueString();
 
+            void ImageBufferReceived(UAVV_IMAGE img, int delay, float pos);
+            void KlvDataReceived(UAVV_KLV klvData);
+            
         public:
 
             ~UIController();
@@ -65,6 +75,7 @@ namespace cvtool
             void ShowMainWindow(int argc, char *argv[]);
             bool IsVideoRenderVisible() const;
             bool IsZoomWindowVisible() const;
+            bool IsKlvWindowVisible() const;
             ZoomValue GetCurrentZoomValue() const;
             void SetupGLWindowUpdateTest();
             void SetupVideoPlayer();
@@ -72,6 +83,7 @@ namespace cvtool
             // button click handlers
             void ToggleRender();
             void ToggleZoom();
+            void ToggleKlv();
             void FirstFrame();
             void PreviousFrame();
             void Play();
@@ -86,7 +98,6 @@ namespace cvtool
             void ExitApplication();
             void UpdateGLFrameBufferTest();
             void UpdateCurrentZoomValue(ZoomValue newValue);
-            void ImageBufferReceived(UAVV_IMAGE img, int delay, float pos);
             void UpdatePosition(float pos);
             void UpdatePlayerControls();
             
@@ -101,7 +112,8 @@ namespace cvtool
             // widget event static handlers
             static void OnPickFile(Fl_Widget*, void*);
             static void OnToggleRender(Fl_Widget*, void*);
-            static void OnToggleZoom(Fl_Widget* sender, void*);
+            static void OnToggleZoom(Fl_Widget*, void*);
+            static void OnToggleKlv(Fl_Widget*, void*);
             static void OnFirstFrameClick(Fl_Widget*, void*);
             static void OnPreviousFrameClick(Fl_Widget*, void*);
             static void OnPlayClick(Fl_Widget*, void*);
@@ -117,6 +129,7 @@ namespace cvtool
 
             // video player callbacks 
             static void ImageDecodingNotification(UAVV_IMAGE img, int delay, float pos, void* pUserData);
+            static void KlvDataNotification(UAVV_KLV klvData, void* pUserData);
             static void PositionChangeNotification(float pos, void* pUserData);
     };
 }

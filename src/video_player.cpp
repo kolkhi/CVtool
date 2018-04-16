@@ -25,6 +25,7 @@ VideoPlayer::VideoPlayer()
     , imageDecoded(false)
 {
     callbackInfo.Reset();
+    positionsHistory.resize(1, 0.0);
 } 
     
 VideoPlayer::~VideoPlayer()
@@ -69,6 +70,8 @@ bool VideoPlayer::InitPlayback(const std::string& file)
 
     IUAVVInterface::SetAbortCallback(uavvHandler, VideoPlayer::abort_cb, static_cast<USER_DATA>(this));
     IUAVVInterface::SetImageDecodeCallback(uavvHandler, VideoPlayer::image_cb, static_cast<USER_DATA>(this));
+    IUAVVInterface::SetKlvDataCallback(uavvHandler, VideoPlayer::klv_cb, static_cast<USER_DATA>(this));
+    
     return true;
 }
 
@@ -80,7 +83,7 @@ void VideoPlayer::ResetPlayer()
     ResetCancelState();
     uavvHandler = nullptr;
     isPaused = false;
-    positionsHistory.resize(1,0);
+    positionsHistory[0] = 0;
 
     if(callbackInfo.pfnPositionChangedNotification)
         callbackInfo.pfnPositionChangedNotification(GetCurrentPosition(), callbackInfo.pUserData);
@@ -148,6 +151,21 @@ void VideoPlayer::FrameReceived(UAVV_IMAGE img, int delay, float pos)
         return;
 
     player->FrameReceived(img, delay, pos);
+}
+
+void VideoPlayer::KlvDataReceived(UAVV_KLV klv)
+{
+    if(callbackInfo.pfnGetKlvDataNotification)
+        callbackInfo.pfnGetKlvDataNotification(klv, callbackInfo.pUserData);
+}
+
+/*static*/ void VideoPlayer::klv_cb(UAVV_KLV klv, USER_DATA v)
+{
+    VideoPlayer* player = static_cast<VideoPlayer*>(v);
+    if(!player)
+        return;
+
+    player->KlvDataReceived(klv);
 }
 
 bool VideoPlayer::IsPlaying() const
@@ -335,5 +353,6 @@ void VideoPlayer::SetCallbackInfo(const VideoPlayerCallbackInfo& info)
 {
     callbackInfo.pfnImageCallbackNotification = info.pfnImageCallbackNotification;
     callbackInfo.pfnPositionChangedNotification = info.pfnPositionChangedNotification;
+    callbackInfo.pfnGetKlvDataNotification = info.pfnGetKlvDataNotification;
     callbackInfo.pUserData = info.pUserData;
 }

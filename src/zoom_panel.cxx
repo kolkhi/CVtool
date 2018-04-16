@@ -34,6 +34,15 @@ void ZoomWnd::UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, 
     zoomView->UpdateGLFrame(buf, scaledX, scaledY, zoomParam);
 }
 
+void ZoomWnd::ClearGLFrame()
+{
+    assert(zoomView);
+    if(!zoomView)
+        return;
+
+    zoomView->ClearGLFrame();
+}
+
 void ZoomWnd::SetUIController(UIController* controller)
 {
     pController = controller;
@@ -41,10 +50,6 @@ void ZoomWnd::SetUIController(UIController* controller)
 
 void ZoomWnd::SetView(ZoomView* view)
 {
-    assert(view);
-    if(!view)
-        return;
-
     zoomView = view;
     zoomView->user_data(static_cast<void*>(this));
 }

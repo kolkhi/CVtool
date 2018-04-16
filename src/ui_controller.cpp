@@ -12,6 +12,8 @@
 #include <zoom_view.h>
 #include <Fl/Fl_Roller.H>
 #include <chrono>
+#include <klv_view.h>
+#include <vector>
 
 using namespace std;
 using namespace cvtool;
@@ -26,6 +28,7 @@ static Fl_Button *lastFrameBtn=(Fl_Button *)0;
 static Fl_Button *pauseBtn=(Fl_Button *)0;
 static Fl_Button *toggleVideoWnd=(Fl_Button *)0;
 static Fl_Button *toggleZoomWnd=(Fl_Button *)0;
+static Fl_Button *toggleKlvWnd=(Fl_Button *)0;
 static Fl_Value_Slider *playTrackbar=(Fl_Value_Slider *)0;
 static Fl_Input  *fileNameEdit=(Fl_Input *)0;
 static Fl_Box    *uavvLibVerLabel = (Fl_Box *)0;
@@ -88,13 +91,19 @@ static Fl_RGB_Image *image_zoomin_mouse() {
   return image;
 }
 
+static Fl_Image *image_klvdata() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_klvdata, 32, 32, 4, 0);
+  return image;
+}
+
 UIController::UIController() 
     : mainWnd(nullptr)
     , renderWnd(nullptr)
     , videoPlayer(nullptr)
     , imageFrameBuffer(nullptr)
-    , renderWndVisible(1)
-    , zoomWndVisible(0)
+    , renderWndVisible(true)
+    , zoomWndVisible(false)
+    , klvWndVisible(false)
     , zoomState(ZoomState::ZoomOff)
     , zoomValue(ZoomValue::x2)
 {
@@ -157,6 +166,14 @@ void UIController::InitUIComponents()
         zoomWnd->size(Fl::w(), Fl::h());
 
     zoomWnd->SetUIController(this);
+
+    shared_ptr<KLVWnd> klvTmp(UIController::makeKlvPanel(this, FRAME_WIDTH, FRAME_HEIGHT, "KLV Data"));
+    klvWnd = std::move(klvTmp);
+
+    if ((Fl::w() < klvWnd->w()) || (Fl::h() < klvWnd->h()))
+        klvWnd->size(Fl::w(), Fl::h());
+
+    klvWnd->SetUIController(this);
 }
 
 void UIController::ShowMainWindow(int argc, char *argv[])
@@ -164,6 +181,7 @@ void UIController::ShowMainWindow(int argc, char *argv[])
     assert(mainWnd);
     assert(renderWnd);
     assert(zoomWnd);
+    assert(klvWnd);
 
     if(!mainWnd)
     {
@@ -183,6 +201,12 @@ void UIController::ShowMainWindow(int argc, char *argv[])
         return;
     }
 
+    if(!klvWnd)
+    {
+        fl_message("ERROR: KLV data window is not initialized");
+        return;
+    }
+
     mainWnd->show(argc, argv);
     
     if(renderWndVisible)
@@ -190,6 +214,9 @@ void UIController::ShowMainWindow(int argc, char *argv[])
 
     if(zoomWndVisible)
         zoomWnd->show();
+
+    if(klvWndVisible)
+        klvWnd->show();
 
 }
 
@@ -206,6 +233,7 @@ void UIController::SetupVideoPlayer()
 
     VideoPlayerCallbackInfo info;
     info.pfnImageCallbackNotification = UIController::ImageDecodingNotification;
+    info.pfnGetKlvDataNotification = UIController::KlvDataNotification;
     info.pfnPositionChangedNotification =  UIController::PositionChangeNotification;
     info.pUserData = static_cast<void*>(this);
     videoPlayer->SetCallbackInfo(info);    
@@ -258,7 +286,9 @@ void UIController::FileNameChanged()
     if(fileSource.size() > 0)
         videoPlayer->InitPlayback(fileSource);
 
+    zoomWnd->ClearGLFrame();
     //FirstFrame();
+    
 }
 
 /*static*/ void UIController::OnChangeFileName(Fl_Widget*, void* pUserData) 
@@ -319,6 +349,11 @@ bool UIController::IsZoomWindowVisible() const
     return zoomWndVisible;
 }
 
+bool UIController::IsKlvWindowVisible() const
+{
+    return klvWndVisible;
+}
+
 void UIController::UpdateRenderWindowVisibility()
 {
     assert(renderWnd);
@@ -341,6 +376,18 @@ void UIController::UpdateZoomWindowVisibility()
         zoomWnd->show();
     else
         zoomWnd->hide();
+}
+
+void UIController::UpdateKlvWindowVisibility()
+{
+    assert(klvWnd);
+    if(!klvWnd)
+        return;
+
+    if(klvWndVisible)
+        klvWnd->show();
+    else
+        klvWnd->hide();
 }
 
 const std::string& UIController::GetLibraryVersionString()
@@ -405,6 +452,26 @@ void UIController::ToggleZoom()
     }
 
     controller->ToggleZoom();
+}
+
+void UIController::ToggleKlv()
+{
+    klvWndVisible = !klvWndVisible;
+    toggleKlvWnd->value(IsKlvWindowVisible() ? 1 : 0);
+
+    UpdateKlvWindowVisibility();
+}
+
+/*static*/ void UIController::OnToggleKlv(Fl_Widget* sender, void* pUserData)
+{
+    assert(pUserData);
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->ToggleKlv();
 }
 
 void UIController::FirstFrame()
@@ -721,6 +788,18 @@ void UIController::ZoomSliderPosChange(double pos)
         } // Fl_Slider* playTrackbar
         
         { 
+            toggleKlvWnd = new Fl_Button(375, 125, 40, 40);
+            toggleKlvWnd->type(1);
+            toggleKlvWnd->down_box(FL_DOWN_BOX);
+            toggleKlvWnd->selection_color((Fl_Color)55);
+            toggleKlvWnd->image( image_klvdata() );
+            toggleKlvWnd->align(Fl_Align(512));
+            toggleKlvWnd->value(controller->IsKlvWindowVisible() ? 1 : 0);
+            toggleKlvWnd->callback(UIController::OnToggleKlv, static_cast<void*>(controller));
+            toggleKlvWnd->tooltip("Show/Hide KLV data window");
+        } // Fl_Button* toggleVideoWnd
+
+        { 
             toggleZoomWnd = new Fl_Button(425, 125, 40, 40);
             toggleZoomWnd->type(1);
             toggleZoomWnd->down_box(FL_DOWN_BOX);
@@ -730,7 +809,7 @@ void UIController::ZoomSliderPosChange(double pos)
             toggleZoomWnd->value(controller->IsZoomWindowVisible() ? 1 : 0);
             toggleZoomWnd->callback(UIController::OnToggleZoom, static_cast<void*>(controller));
             toggleZoomWnd->tooltip("Show/Hide zoom window");
-        } // Fl_Button* toggleVideoWnd
+        } // Fl_Button* toggleZoomWnd
 
         { 
             toggleVideoWnd = new Fl_Button(475, 125, 40, 40);
@@ -851,14 +930,69 @@ void UIController::ZoomSliderPosChange(double pos)
     return w;
 }
 
+/*static*/ KLVWnd* UIController::makeKlvPanel(UIController* controller, int W, int H, const char* l)
+{
+    KLVWnd* w = nullptr;
+    KLVTableView* klvtable = nullptr;
+    { 
+        KLVWnd* o = new KLVWnd(W, H, l);
+        w = o; if (w) {/* empty */}
+        o->box(FL_FLAT_BOX);
+        o->color(FL_BACKGROUND_COLOR);
+        o->selection_color(FL_BACKGROUND_COLOR);
+        o->labeltype(FL_NO_LABEL);
+        o->labelfont(0);
+        o->labelsize(14);
+        o->labelcolor(FL_FOREGROUND_COLOR);
+        o->when(FL_WHEN_RELEASE);
+        o->callback(UIController::OnToggleKlv, static_cast<void*>(controller));
+        o->set_non_modal();
+        {
+            klvtable = new KLVTableView(20, 20, W-40, H-40, "KLV Data");
+            klvtable->selection_color(FL_LIGHT1);
+            klvtable->when(FL_WHEN_RELEASE | FL_WHEN_CHANGED);
+            klvtable->table_box(FL_NO_BOX);
+            klvtable->col_resize_min(4);
+            klvtable->row_resize_min(4);
+
+            // ROWS
+            klvtable->row_header(0);
+            klvtable->row_header_width(60);
+            klvtable->row_resize(1);
+            klvtable->rows(MAX_UAVV_KLV_KEY);
+            klvtable->row_height_all(20);
+
+            // COLS
+            int colWidth = klvtable->w()-10;
+            klvtable->cols(3);
+            klvtable->col_header(1);
+            klvtable->col_header_height(25);
+            klvtable->col_resize(1);
+            klvtable->col_width(0, colWidth * 0.4);
+            klvtable->col_width(1, colWidth * 0.5);
+            klvtable->col_width(2, colWidth * 0.1);
+        }
+
+        o->end();
+        o->size_range(W, H, 0, 0);
+        o->resizable(klvtable);
+        o->SetKLVDataView(klvtable);
+    } // KLVWnd* o
+    return w;
+}
+
 void UIController::ExitApplication()
 {
+    if(klvWnd->shown())
+        klvWnd->hide();
+
     if(zoomWnd->shown())
         zoomWnd->hide();
 
     if(renderWnd->shown())
         renderWnd->hide();
 
+    klvWnd->CleanUp();
     zoomWnd->CleanUp();
     renderWnd->CleanUp();
 
@@ -957,6 +1091,62 @@ void UIController::ImageBufferReceived(UAVV_IMAGE img, int delay, float pos)
     }
 
     controller->ImageBufferReceived(img, delay, pos);
+}
+
+void UIController::KlvDataReceived(UAVV_KLV klvDataHandle)
+{
+    //FILE* file = fopen("klv.log", "wb");
+    //if (file)
+    klvItems.clear();
+    int count = IUAVVInterface::KlvSize(klvDataHandle);
+    if(count > 0)
+    {
+        int count = IUAVVInterface::KlvSize(klvDataHandle);
+        klvItems.resize(count + 1);
+
+        // Obtain KLV timestamp
+        long long timestamp = IUAVVInterface::KlvGetTimeStamp(klvDataHandle);
+        time_t    sec = timestamp / 1000000;
+        long      usec = timestamp % 1000000;
+
+        // Format UTC timestamp
+        struct tm tm;
+        gmtime_r(&sec, &tm);
+        char tstr[30];
+        int len = strftime(tstr, sizeof(tstr), "%Y/%m/%d %H:%M:%S", &tm);
+        sprintf(tstr + len, ".%03ld ", usec / 1000);
+
+        klvItems[0].itemName = "Time";
+        klvItems[0].itemValue = std::string(tstr) + " UTC";
+        klvItems[0].itemState = "OK";
+        
+        //fprintf(file, "-- %s UTC --\n", tstr);
+
+        // Dump all KLV items to file
+        for (int i = 1;  i <= count;  ++i)
+        {
+            uavv_klv_key_t key = IUAVVInterface::KlvItem(klvDataHandle, i);
+            klvItems[i].itemName = IUAVVInterface::KlvItemName(key);
+            klvItems[i].itemValue = IUAVVInterface::KlvGetString(klvDataHandle, key);
+            klvItems[i].itemState = IUAVVInterface::KlvIsInErrorState(klvDataHandle, key) ? "Error" : "Ok";
+        }
+        //fclose(file);
+    }
+
+    klvWnd->UpdateKLVData(klvItems);
+
+    Fl::awake();
+} 
+
+/*static*/ void UIController::KlvDataNotification(UAVV_KLV klvData, void* pUserData)
+{
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->KlvDataReceived(klvData);
 }
 
 void UIController::UpdatePosition(float pos)

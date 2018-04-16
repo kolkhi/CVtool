@@ -45,6 +45,7 @@ namespace cvtool
         void MakeZoom(int zoomVal);
         void CleanUp();
         void SetUIController(UIController* controller);
+        void ClearGLFrame();
     };
 }
 

@@ -30,6 +30,7 @@ namespace cvtool
             void SetView(ZoomView* view);
             void ZoomChanged(int zoomParam);
             void CleanUp();
+            void ClearGLFrame();
     };
 }
 

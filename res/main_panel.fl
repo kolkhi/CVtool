@@ -115,8 +115,14 @@ if (img) img->release();} open
     Fl_Button {} {
       image {zoomin.png} xywh {420 125 40 40}
     }
+    Fl_Button {} {
+      image {zoomin_mouse.png} xywh {130 55 25 25}
+    }
+    Fl_Button {} {
+      image {zoomin_mouse.png} xywh {210 55 25 25}
+    }
     Fl_Button {} {selected
-      image {zoomin_mouse.png} xywh {375 135 25 25}
+      image {klvdata.png} xywh {375 125 40 40}
     }
   }
 }
