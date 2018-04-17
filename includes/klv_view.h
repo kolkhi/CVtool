@@ -23,6 +23,7 @@ namespace cvtool
     private:
         Fl_Color cell_bgcolor;				// color of cell's bg color
         Fl_Color cell_fgcolor;				// color of cell's fg color
+        Fl_Color cell_errcolor;				// color of cell's error color
 
         std::mutex klvMutex;
         std::vector<KLVItem> klvItems;
@@ -39,6 +40,7 @@ namespace cvtool
 
         Fl_Color GetCellFGColor() const;
         Fl_Color GetCellBGColor() const;
+        Fl_Color GetCellBGErrorColor() const;
         void SetCellFGColor(Fl_Color val);
         void SetCellBGColor(Fl_Color val);
 

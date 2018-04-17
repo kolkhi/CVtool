@@ -11,7 +11,12 @@ namespace cvtool
     {
         std::string itemName;
         std::string itemValue;
-        std::string itemState;
+        bool itemState;
+
+        std::string GetStateString()
+        {
+            return itemState ? "Error" : "OK";
+        }
     }; 
 }
 

@@ -18,6 +18,7 @@ KLVTableView::KLVTableView(int x, int y, int w, int h, const char *l /*=0*/)
     klvHeaders[2] = "State";
     cell_bgcolor = FL_WHITE;
     cell_fgcolor = FL_BLACK;
+    cell_errcolor =  0xff8e8e00;
     end();
 }
 
@@ -51,30 +52,36 @@ void KLVTableView::draw_cell(TableContext context,
 	case CONTEXT_CELL:
 	{
 	    fl_push_clip(X, Y, W, H);
-        if(R < (int)klvItems.size())
 	    {
             std::string s;
             Fl_Align align = FL_ALIGN_LEFT;
-            switch(C)
+            Fl_Color backColor = cell_bgcolor;
+            if(R < (int)klvItems.size())
             {
-                case 0:
-                    s = klvItems[R].itemName;
-                    align = FL_ALIGN_LEFT;
-                    break;
-                case 1:
-                    s = klvItems[R].itemValue;
-                    align = FL_ALIGN_LEFT;
-                    break;
-                case 2:
-                    s = klvItems[R].itemState;
-                    align = FL_ALIGN_CENTER;
-                    break;
-                default:
-                    break;
+
+                switch(C)
+                {
+                    case 0:
+                        s = klvItems[R].itemName;
+                        align = FL_ALIGN_LEFT;
+                        break;
+                    case 1:
+                        s = klvItems[R].itemValue;
+                        align = FL_ALIGN_LEFT;
+                        break;
+                    case 2:
+                        s = klvItems[R].GetStateString();
+                        align = FL_ALIGN_CENTER;
+                        if(klvItems[R].itemState)
+                            backColor = cell_errcolor;
+                        break;
+                    default:
+                        break;
+                }
             }
 
 	        // BG COLOR
-            fl_color( row_selected(R) ? selection_color() : cell_bgcolor);
+            fl_color( row_selected(R) ? selection_color() : backColor);
             fl_rectf(X, Y, W, H);
 
             // TEXT

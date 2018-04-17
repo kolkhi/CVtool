@@ -1118,7 +1118,7 @@ void UIController::KlvDataReceived(UAVV_KLV klvDataHandle)
 
         klvItems[0].itemName = "Time";
         klvItems[0].itemValue = std::string(tstr) + " UTC";
-        klvItems[0].itemState = "OK";
+        klvItems[0].itemState = false;
         
         //fprintf(file, "-- %s UTC --\n", tstr);
 
@@ -1128,7 +1128,7 @@ void UIController::KlvDataReceived(UAVV_KLV klvDataHandle)
             uavv_klv_key_t key = IUAVVInterface::KlvItem(klvDataHandle, i);
             klvItems[i].itemName = IUAVVInterface::KlvItemName(key);
             klvItems[i].itemValue = IUAVVInterface::KlvGetString(klvDataHandle, key);
-            klvItems[i].itemState = IUAVVInterface::KlvIsInErrorState(klvDataHandle, key) ? "Error" : "Ok";
+            klvItems[i].itemState = IUAVVInterface::KlvIsInErrorState(klvDataHandle, key);
         }
         //fclose(file);
     }
