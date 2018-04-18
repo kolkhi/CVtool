@@ -21,8 +21,8 @@ VideoPlayer::VideoPlayer()
     , uavvHandler(nullptr)
     , isPaused(false)
     , isDecoding(false)
+    , stopWhenFrameReceived(false)
     , updatePositionOnDecode(true)
-    , imageDecoded(false)
 {
     callbackInfo.Reset();
     positionsHistory.resize(1, 0.0);
@@ -134,12 +134,9 @@ int VideoPlayer::IsDecodingCancelled() const
 
 void VideoPlayer::FrameReceived(UAVV_IMAGE img, int delay, float pos)
 {
-    imageDecoded = true;
-    if(updatePositionOnDecode)
-    {
-        positionsHistory[0] = pos;
-    }
-
+    stopWhenFrameReceived = true;
+    positionsHistory[0] = pos;
+    
     if(callbackInfo.pfnImageCallbackNotification)
         callbackInfo.pfnImageCallbackNotification(img, delay, pos, callbackInfo.pUserData);
 }
@@ -203,7 +200,6 @@ void VideoPlayer::StartDecoding()
 
             isDecoding = false;
             ResetCancelState();
-            IUAVVInterface::DecodeVideo(uavvHandler, TIMEOUT_MS);
         });
     }
 }
@@ -228,17 +224,17 @@ void VideoPlayer::PauseDecoding()
 
 bool VideoPlayer::SlideToPosition(float pos)
 {
-    return GoToPos(pos, SCROLL_TIMEOUT_MS, false);
+    return GoToPos(pos, SCROLL_TIMEOUT_MS, 10, false);
 }
 
 bool VideoPlayer::GoToStart()
 {
-    return GoToPos(0.0, TIMEOUT_MS);
+    return GoToPos(0.0, TIMEOUT_MS, 60);
 }
     
 bool VideoPlayer::GoToEnd()
 {
-    return GoToPos(100.0, TIMEOUT_MS);
+    return GoToPos(100.0, TIMEOUT_MS, 60);
 }
     
 bool VideoPlayer::StepBackward()
@@ -246,32 +242,11 @@ bool VideoPlayer::StepBackward()
     float newPos = 0.0;
     if(positionsHistory.size() > 0)
     {
-        newPos = positionsHistory.back() - MOVE_STEP;
+        newPos = positionsHistory.back() - 2 * MOVE_STEP;
+        newPos = std::trunc(newPos); 
     }
 
-    /*if(positionsHistory.size() > 2) // more than 2 frame
-    {   
-        // make 2 step back to get previous image when decoded  
-        for(auto i=1; i <= 2; i++)
-        {
-            float lastPosition = positionsHistory.back();
-            positionsHistory.pop_back();
-        
-            auto diff = fabs(positionsHistory.back() - lastPosition);
-            if(diff <= MOVE_STEP)
-            {
-                // if previous postion is less than default position step - get previous position
-                newPos = positionsHistory.back();
-            }
-            else
-            {
-                // else make one default step back
-                newPos = lastPosition - MOVE_STEP;
-            }
-        }
-    }*/  
-
-    return GoToPos(newPos, TIMEOUT_MS);
+    return GoToPos(newPos, TIMEOUT_MS, 60);
 }
 
 bool VideoPlayer::StepForward()
@@ -289,12 +264,15 @@ bool VideoPlayer::StepForward()
     if(GetCurrentPosition() == 100)
         return false;
 
-    DecodeNextImage(TIMEOUT_MS);
+    DecodeNextImage(TIMEOUT_MS, 60);
+
+    if(callbackInfo.pfnPositionChangedNotification)
+        callbackInfo.pfnPositionChangedNotification(GetCurrentPosition(), callbackInfo.pUserData);
    
     return true;
 }
 
-bool VideoPlayer::GoToPos(float pos, int timeOut, bool notifyObserver /*=true*/)
+bool VideoPlayer::GoToPos(float pos, int timeOut, int decodeLimit, bool notifyObserver /*=true*/)
 {
     if(!IsDecodeInitialized())
     {
@@ -310,30 +288,32 @@ bool VideoPlayer::GoToPos(float pos, int timeOut, bool notifyObserver /*=true*/)
         StopDecoding();
     }
 
-    // remove all positions from history that are greate than target position
-    /*auto it = std::remove_if(positionsHistory.begin(), 
-                                positionsHistory.end(), 
-                                [pos](float val) {  return val >= pos; } );
-
-    positionsHistory.erase(it, positionsHistory.end());*/
-
     positionsHistory[0] = pos;
     IUAVVInterface::GoToPosition(uavvHandler, pos);
 
-    updatePositionOnDecode = false;
-    DecodeNextImage(timeOut, notifyObserver);
-    updatePositionOnDecode = true;
+    DecodeNextImage(timeOut, decodeLimit);
+    
+    if(notifyObserver && callbackInfo.pfnPositionChangedNotification)
+        callbackInfo.pfnPositionChangedNotification(GetCurrentPosition(), callbackInfo.pUserData);
 
     return true;
 }
 
-void VideoPlayer::DecodeNextImage(int timeOut, bool notifyObserver /*=true*/ )
+void VideoPlayer::DecodeNextImage(int timeOut, int decodeLimit)
 {
-    
-    IUAVVInterface::DecodeVideo(uavvHandler, timeOut);
-    
-    if(notifyObserver && callbackInfo.pfnPositionChangedNotification)
-        callbackInfo.pfnPositionChangedNotification(GetCurrentPosition(), callbackInfo.pUserData);
+    stopWhenFrameReceived = false;
+    std::thread nextFrameThread = std::thread([this, timeOut, decodeLimit]()
+    {
+        for(auto i=1; i <= decodeLimit; i++)
+        {
+            IUAVVInterface::DecodeVideo(uavvHandler, timeOut);
+            if(stopWhenFrameReceived)
+                break;
+        }
+    });
+
+    if(nextFrameThread.joinable())
+        nextFrameThread.join();
 }
 
 bool VideoPlayer::IsVideoStreaming() const

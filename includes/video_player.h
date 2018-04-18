@@ -41,12 +41,14 @@ namespace cvtool
             UAVV_VIDEO uavvHandler;
             std::atomic<bool> isPaused;
             std::atomic<bool> isDecoding;
+            std::atomic<bool> stopWhenFrameReceived;
             std::string sourceFile;
             std::vector<float> positionsHistory;
             bool updatePositionOnDecode;
-            bool imageDecoded;
+            
 
             std::thread decodingThread;
+            std::thread nextFrameThread;
             VideoPlayerCallbackInfo callbackInfo;
 
         private:
@@ -59,8 +61,8 @@ namespace cvtool
             void StartDecoding();
             void StopDecoding();
             void PauseDecoding();
-            bool GoToPos(float pos, int timeOut, bool notifyObserver = true);
-            void DecodeNextImage(int timeOut, bool notifyObserver = true);
+            bool GoToPos(float pos, int timeOut, int decodeLimit, bool notifyObserver = true);
+            void DecodeNextImage(int timeOut, int decodeLimit);
 
             void ResetPlayer();
             void ResetCancelState();
@@ -68,6 +70,7 @@ namespace cvtool
             // player state query functions
             bool IsDecodeInitialized() const;
             int IsDecodingCancelled() const;
+            int IsImageDecoded() const;
 
             void SetCurrentPosition(float);
             void FrameReceived(UAVV_IMAGE img, int delay, float pos);

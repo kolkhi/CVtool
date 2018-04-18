@@ -25,6 +25,7 @@ namespace cvtool
             void SetUIController(UIController* controller);
             void SetKLVDataView(KLVTableView* view);
             void UpdateKLVData(const std::vector<KLVItem>& items);
+            void ClearData();
             void CleanUp();
     };
 }

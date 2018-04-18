@@ -47,6 +47,12 @@ void KLVWnd::UpdateKLVData(const std::vector<KLVItem>& klvItems)
     redraw();
 }
 
+void KLVWnd::ClearData()
+{
+    std::vector<KLVItem> klvItems;
+    UpdateKLVData(klvItems);
+}
+
 void KLVWnd::CleanUp()
 {
     

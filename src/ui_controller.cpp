@@ -287,6 +287,7 @@ void UIController::FileNameChanged()
         videoPlayer->InitPlayback(fileSource);
 
     zoomWnd->ClearGLFrame();
+    klvWnd->ClearData();
     //FirstFrame();
     
 }
