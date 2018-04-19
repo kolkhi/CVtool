@@ -6,6 +6,7 @@
 #include <atomic>
 #include <thread>
 #include <vector>
+#include <deque>
 
 namespace cvtool
 {
@@ -44,9 +45,9 @@ namespace cvtool
             std::atomic<bool> stopWhenFrameReceived;
             std::string sourceFile;
             std::vector<float> positionsHistory;
+            std::deque<std::pair<UAVV_IMAGE, float>> previousImages;
             bool updatePositionOnDecode;
             
-
             std::thread decodingThread;
             std::thread nextFrameThread;
             VideoPlayerCallbackInfo callbackInfo;
@@ -75,6 +76,10 @@ namespace cvtool
             void SetCurrentPosition(float);
             void FrameReceived(UAVV_IMAGE img, int delay, float pos);
             void KlvDataReceived(UAVV_KLV klv);
+
+            void ClearStoredImages();
+            void AddImageToCache(UAVV_IMAGE img, float pos);
+            bool ShowPreviousImage();
         public:
             VideoPlayer();
             ~VideoPlayer();

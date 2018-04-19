@@ -15,6 +15,7 @@ using namespace uavv;
 #define TIMEOUT_MS          10000
 #define SCROLL_TIMEOUT_MS   500
 #define MOVE_STEP           1.0
+#define IMAGE_CACHE_LIMIT   5
 
 VideoPlayer::VideoPlayer()
     : cancelDecoding(0)
@@ -30,6 +31,10 @@ VideoPlayer::VideoPlayer()
     
 VideoPlayer::~VideoPlayer()
 {
+    StopDecoding();
+
+    ClearStoredImages();
+    IUAVVInterface::DestroyVideoHandle(uavvHandler);
     IUAVVInterface::UnloadLibrary();
 }
 
@@ -79,12 +84,13 @@ void VideoPlayer::ResetPlayer()
 {
     StopDecoding();
 
+    ClearStoredImages();
     IUAVVInterface::DestroyVideoHandle(uavvHandler);
     ResetCancelState();
     uavvHandler = nullptr;
     isPaused = false;
     positionsHistory[0] = 0;
-
+    
     if(callbackInfo.pfnPositionChangedNotification)
         callbackInfo.pfnPositionChangedNotification(GetCurrentPosition(), callbackInfo.pUserData);
 
@@ -137,6 +143,8 @@ void VideoPlayer::FrameReceived(UAVV_IMAGE img, int delay, float pos)
     stopWhenFrameReceived = true;
     positionsHistory[0] = pos;
     
+    AddImageToCache(img, pos);
+
     if(callbackInfo.pfnImageCallbackNotification)
         callbackInfo.pfnImageCallbackNotification(img, delay, pos, callbackInfo.pUserData);
 }
@@ -224,29 +232,45 @@ void VideoPlayer::PauseDecoding()
 
 bool VideoPlayer::SlideToPosition(float pos)
 {
+    ClearStoredImages();
     return GoToPos(pos, SCROLL_TIMEOUT_MS, 10, false);
 }
 
 bool VideoPlayer::GoToStart()
 {
+    ClearStoredImages();
     return GoToPos(0.0, TIMEOUT_MS, 60);
 }
     
 bool VideoPlayer::GoToEnd()
 {
+    ClearStoredImages();
     return GoToPos(100.0, TIMEOUT_MS, 60);
 }
     
 bool VideoPlayer::StepBackward()
 {
-    float newPos = 0.0;
-    if(positionsHistory.size() > 0)
+    if(previousImages.size() > 0)
     {
-        newPos = positionsHistory.back() - 2 * MOVE_STEP;
-        newPos = std::trunc(newPos); 
+        // remove current frame first
+        auto data = previousImages.back();
+        previousImages.pop_back();
+        IUAVVInterface::DestroyImageHandle(data.first);
     }
 
-    return GoToPos(newPos, TIMEOUT_MS, 60);
+    if(previousImages.size() == 0)
+    {
+        float newPos = 0.0;
+        if(positionsHistory.size() > 0)
+        {
+            newPos = positionsHistory.back() - 2 * MOVE_STEP;
+            newPos = std::trunc(newPos); 
+        }
+
+        return GoToPos(newPos, TIMEOUT_MS, 60);
+    }
+
+    return ShowPreviousImage();    
 }
 
 bool VideoPlayer::StepForward()
@@ -269,6 +293,38 @@ bool VideoPlayer::StepForward()
     if(callbackInfo.pfnPositionChangedNotification)
         callbackInfo.pfnPositionChangedNotification(GetCurrentPosition(), callbackInfo.pUserData);
    
+    return true;
+}
+
+bool VideoPlayer::ShowPreviousImage()
+{
+    if(!IsDecodeInitialized())
+    {
+        return false;
+    }
+
+    if(previousImages.size() == 0)
+        return false;
+
+    // can't move to position for streaming video
+    if(IsVideoStreaming())
+        return false;
+
+    if(isDecoding)
+    {
+        StopDecoding();
+    }
+
+    auto data = previousImages.back();
+
+    UAVV_IMAGE img = data.first;
+    float pos = data.second;
+
+    positionsHistory[0] = pos;
+    
+    if(callbackInfo.pfnImageCallbackNotification)
+        callbackInfo.pfnImageCallbackNotification(img, 0.0, pos, callbackInfo.pUserData);
+
     return true;
 }
 
@@ -335,4 +391,25 @@ void VideoPlayer::SetCallbackInfo(const VideoPlayerCallbackInfo& info)
     callbackInfo.pfnPositionChangedNotification = info.pfnPositionChangedNotification;
     callbackInfo.pfnGetKlvDataNotification = info.pfnGetKlvDataNotification;
     callbackInfo.pUserData = info.pUserData;
+}
+
+void VideoPlayer::ClearStoredImages()
+{
+    for(auto i=0; i<(int)previousImages.size(); i++)
+    {
+        IUAVVInterface::DestroyImageHandle(previousImages[i].first);
+    }
+    previousImages.clear();
+}
+
+void VideoPlayer::AddImageToCache(UAVV_IMAGE img, float pos)
+{
+    UAVV_IMAGE newImage = IUAVVInterface::CopyImageHandle(img);
+    previousImages.push_back(std::make_pair(newImage, pos));
+    if((int)previousImages.size() > IMAGE_CACHE_LIMIT)
+    {
+        auto data = previousImages.front();
+        IUAVVInterface::DestroyImageHandle(data.first);
+        previousImages.pop_front();
+    }
 }
