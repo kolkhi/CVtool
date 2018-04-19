@@ -72,6 +72,14 @@ void ZoomWnd::CleanUp()
     zoomView->CleanUp();
 }
 
+void ZoomWnd::UpdateDrawing()
+{
+    assert(zoomView);
+    if(!zoomView)
+        return;
+
+    zoomView->redraw();
+}
 
 //
 // End of "$Id: zoom_panel.fl 02 2018-03-29 18:21:11Z gsergia $".

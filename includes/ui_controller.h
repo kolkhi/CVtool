@@ -10,6 +10,7 @@
 #include <uavv_image.h>
 #include <data_structures.h>
 #include <vector>
+#include <draw_controller.h>
 
 #define FRAME_WIDTH             800
 #define FRAME_HEIGHT            600
@@ -43,6 +44,8 @@ namespace cvtool
         std::string zoomValueStr;
         std::vector<KLVItem> klvItems;
 
+        shared_ptr<DrawController> drawController;
+
         protected:
             static MainWnd* makeMainPanel(UIController* controller);
             static RenderWnd* makeRenderPanel(UIController* controller, int W, int H, const char* l = 0);
@@ -61,7 +64,7 @@ namespace cvtool
             const std::string& GetLibraryVersionString();
             const std::string& GetStreamingState();
             const std::string& GetZoomValueString();
-
+            
             void ImageBufferReceived(UAVV_IMAGE img, int delay, float pos);
             void KlvDataReceived(UAVV_KLV klvData);
             
@@ -79,6 +82,8 @@ namespace cvtool
             ZoomValue GetCurrentZoomValue() const;
             void SetupGLWindowUpdateTest();
             void SetupVideoPlayer();
+            shared_ptr<DrawController> GetDrawController();
+            void UpdateDrawing();
             
             // button click handlers
             void ToggleRender();

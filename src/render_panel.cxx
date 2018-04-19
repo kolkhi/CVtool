@@ -173,6 +173,11 @@ int RenderWnd::handle(int event)
     }
 }
 
+void RenderWnd::UpdateDrawing()
+{
+    redraw();
+}
+
 //
 // End of "$Id: renderer_panel.fl 02 2018-03-29 18:21:11Z gsergia $".
 //

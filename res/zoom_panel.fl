@@ -1,0 +1,49 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0304
+header_name {.h}
+code_name {.cxx}
+Function {make_window()} {open private
+} {
+  Fl_Window {} {open
+    xywh {677 259 809 624} type Double visible
+  } {
+    Fl_Group {} {open
+      xywh {0 0 810 115}
+    } {
+      Fl_Button {} {
+        image {line.png} xywh {10 5 30 30}
+      }
+      Fl_Button {} {
+        image {rect.png} xywh {50 5 30 30}
+      }
+      Fl_Button {} {
+        label {Line color }
+        xywh {210 5 30 30} color 0 align 4
+      }
+      Fl_Choice {} {
+        label {Line width } open
+        xywh {320 5 50 30} down_box BORDER_BOX
+      } {}
+      Fl_Box {} {
+        xywh {378 3 3 34} box THIN_DOWN_BOX
+      }
+      Fl_Box {} {
+        xywh {129 3 3 35} box THIN_DOWN_BOX
+      }
+      Fl_Slider {} {
+        label Zoom
+        xywh {428 6 300 27} type {Horz Knob} box FLAT_BOX align 4
+      }
+      Fl_Box {} {
+        label x1
+        xywh {728 5 25 25}
+      }
+      Fl_Button {} {selected
+        image {clear_drawing.png} xywh {90 5 30 30}
+      }
+    }
+    Fl_Group {} {open
+      xywh {15 129 780 441}
+    } {}
+  }
+}

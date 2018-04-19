@@ -59,6 +59,7 @@ namespace cvtool
         void SetUIController(UIController* controller);
         UAVV_IMAGE GetCurrentFrameCopy();
         void CleanUp();
+        void UpdateDrawing();
     };
 }
 

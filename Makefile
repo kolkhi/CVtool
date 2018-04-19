@@ -1,4 +1,6 @@
-TEST_SRC1 = ./src/main.cpp ./src/ui_controller.cpp ./src/video_player.cpp ./src/uavv_wrapper.cpp ./src/xloader.c ./src/main_panel.cxx ./src/render_panel.cxx ./src/zoom_panel.cxx ./src/zoom_view.cxx ./src/klv_panel.cxx ./src/klv_view.cxx
+TEST_SRC1 = ./src/main.cpp ./src/ui_controller.cpp ./src/video_player.cpp ./src/uavv_wrapper.cpp \
+			./src/xloader.c ./src/main_panel.cxx ./src/render_panel.cxx ./src/zoom_panel.cxx \
+			./src/zoom_view.cxx ./src/klv_panel.cxx ./src/klv_view.cxx ./src/draw_controller.cpp ./src/draw_model.cpp
 
 TEST_BIN1 = CVTool$(BIN_EXT)
 
@@ -64,6 +66,12 @@ klv_panel.o:  ./src/klv_panel.cxx
 	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 klv_view.o:  ./src/klv_view.cxx
+	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
+
+draw_controller.o:  ./src/draw_controller.cpp
+	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
+
+draw_model.o:  ./src/draw_model.cpp
 	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 .PHONY: clear

@@ -34,11 +34,16 @@ namespace cvtool
 
     protected:
         void draw();
+        int handle(int event);
         int calculateOffset(int mousePos, int centerPos);
         bool isOffsetOutOfBoundary(int offset, int boundary);
         int moveOffsetToClosestBoundary(int offset, int boundary);
         void findBestZoomParameterAndUpdate(int mouseX, int mouseY, int centerX, int centerY, int width, int height);
 
+        void drawGeometry();
+        void drawLines();
+        void drawRectangles();
+        
     public:
         ZoomView(int X, int Y, int W, int H, const char* l = 0);
         void UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, int zoomVal);

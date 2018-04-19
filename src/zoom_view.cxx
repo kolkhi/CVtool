@@ -10,6 +10,7 @@
 #include <FL/Fl_Preferences.H>
 #include <uavv_wrapper.h>
 #include <ui_controller.h>
+#include <draw_model.h>
 
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <io.h>
@@ -138,6 +139,8 @@ void ZoomView::draw()
         
         // draw GL frame
         mGlFrame.draw();
+
+
         
  #ifdef DEBUG_GL_ZOOM
         // draw red point at the center position 
@@ -160,6 +163,8 @@ void ZoomView::draw()
         glVertex2f(mouseX-2, mouseY+2);
         glEnd();
 #endif
+
+        drawGeometry();
 
         glPopMatrix();
         glDisable(GL_BLEND);
@@ -242,4 +247,138 @@ void ZoomView::CleanUp()
 void ZoomView::SetUIController(UIController* controller)
 {
     pController = controller;
+}
+
+int ZoomView::handle(int event) 
+{
+    switch(event) 
+    {
+    case FL_PUSH:
+        {
+            //... mouse down event ...
+            //... position in Fl::event_x() and Fl::event_y()
+            if (!valid())  
+            {
+                ortho();
+                valid(1);
+            }
+
+            //float xpos_scaled =  (float)Fl::event_x() / (float)w();
+            //float ypos_scaled =  (float)(h() - Fl::event_y()) / (float)h();
+            //pController->OnRenderMouseDown(event, xpos_scaled, ypos_scaled);
+        }
+        return 1;
+    case FL_RELEASE:   
+        //... mouse up event ...
+        return 1;
+    case FL_DRAG:
+        //... mouse moved while down event ...
+        return 1;
+    /*
+    case FL_FOCUS :
+    case FL_UNFOCUS :
+        ... Return 1 if you want keyboard events, 0 otherwise
+        return 1;
+    case FL_KEYBOARD:
+        ... keypress, key is in Fl::event_key(), ascii in Fl::event_text()
+        ... Return 1 if you understand/use the keyboard event, 0 otherwise...
+        return 1;
+    case FL_SHORTCUT:
+        ... shortcut, key is in Fl::event_key(), ascii in Fl::event_text()
+        ... Return 1 if you understand/use the shortcut event, 0 otherwise...
+        return 1;
+    */
+    default:
+        // pass other events to the base class...
+        return Fl_Gl_Window::handle(event);
+    }
+}
+
+void ZoomView::drawGeometry()
+{
+    DrawController* drawContoller = pController->GetDrawController().get(); 
+    assert(drawContoller);
+
+    GLfloat lineWidth = static_cast<GLfloat>(static_cast<int>(drawContoller->GetCurrentLineWidth()));
+    Fl_Color c = drawContoller->GetCurrentColor();
+    uchar r,g,b;
+    Fl::get_color(c,r,g,b);
+
+    glLineWidth(lineWidth);
+    glColor3f(r / 255.f, g / 255.f, b / 255.f);
+
+    drawLines();
+    drawRectangles();
+}
+
+void ZoomView::drawLines()
+{
+    DrawController* drawContoller = pController->GetDrawController().get(); 
+    assert(drawContoller);
+
+    int width = mGlFrame.width();
+    int height = mGlFrame.height();
+
+    int mouseX = std::ceil(mouseScaledX * (float)width);
+    int mouseY = std::ceil(mouseScaledY * (float)height);
+
+    glBegin(GL_LINES);
+        glVertex2f(mouseX + 50.f, mouseY + 50.f); 
+        glVertex2f(mouseX - 50.f, mouseY - 50.f); 
+        glVertex2f(mouseX + 50.f, mouseY - 50.f); 
+        glVertex2f(mouseX - 50.f, mouseY + 50.f); 
+    glEnd();
+
+    const DrawModel& model = drawContoller->GetModel();
+    if(model.GetLinesCount() == 0)
+        return;
+
+    glBegin(GL_LINES);
+    for(auto i=0; i<model.GetLinesCount(); i++)
+    {
+        const Line2f* line = model.GetLine(i);
+        if(!line)
+            continue;
+
+        glVertex2f(line->p1.x, line->p1.x); 
+        glVertex2f(line->p2.x, line->p2.x); 
+    }
+    glEnd();
+}
+
+void ZoomView::drawRectangles()
+{
+    DrawController* drawContoller = pController->GetDrawController().get(); 
+    assert(drawContoller);
+
+    int width = mGlFrame.width();
+    int height = mGlFrame.height();
+
+    int mouseX = std::ceil(mouseScaledX * (float)width);
+    int mouseY = std::ceil(mouseScaledY * (float)height);
+
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(mouseX + 20.f, mouseY + 20.f); 
+        glVertex2f(mouseX - 20.f, mouseY + 20.f); 
+        glVertex2f(mouseX - 20.f, mouseY - 20.f); 
+        glVertex2f(mouseX + 20.f, mouseY - 20.f); 
+    glEnd();
+
+    const DrawModel& model = drawContoller->GetModel();
+    if(model.GetRectanglesCount() == 0)
+        return;
+
+    for(auto i=0; i<model.GetRectanglesCount(); i++)
+    {
+        const Rect2f* rect = model.GetRect(i);
+        if(!rect)
+            continue;
+
+        glBegin(GL_LINE_LOOP);
+            glVertex2f(0.5f, 0.5f); 
+            glVertex2f(-0.5f, 0.5f); 
+            glVertex2f(-0.5f, -0.5f); 
+            glVertex2f(0.5f, -0.5f); 
+        glEnd();
+    }
 }

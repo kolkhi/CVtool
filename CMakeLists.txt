@@ -13,7 +13,8 @@ add_executable(CVtool WIN32 ./src/main.cpp ./src/ui_controller.cpp
                             ./src/main_panel.cxx ./src/render_panel.cxx  
                             ./src/video_player.cpp ./src/xloader.c ./src/uavv_wrapper.cpp 
                             ./src/zoom_panel.cxx ./src/zoom_view.cxx 
-                            ./src/klv_panel.cxx ./src/klv_view.cxx)
+                            ./src/klv_panel.cxx ./src/klv_view.cxx
+                            ./src/draw_controller.cpp ./src/draw_model.cpp)
 
 target_link_libraries(CVtool fltk)
 target_link_libraries(CVtool fltk_gl)

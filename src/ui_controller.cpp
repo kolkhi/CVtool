@@ -96,6 +96,21 @@ static Fl_Image *image_klvdata() {
   return image;
 }
 
+static Fl_Image *image_rect() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_rect, 22, 22, 4, 0);
+  return image;
+}
+
+static Fl_Image *image_line() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_line, 22, 22, 4, 0);
+  return image;
+}
+
+static Fl_Image *image_clear_drawing() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_clear_drawing, 22, 22, 4, 0);
+  return image;
+}
+
 UIController::UIController() 
     : mainWnd(nullptr)
     , renderWnd(nullptr)
@@ -133,6 +148,10 @@ bool UIController::InitUAVVLibrary()
 
 void UIController::InitUIComponents()
 {
+    shared_ptr<DrawController> drawTemp(DrawController::CreateInstance());
+    drawController = std::move(drawTemp);
+    drawController->SetUIController(this);
+
     shared_ptr<MainWnd> mainTemp(UIController::makeMainPanel(this));
     mainWnd = std::move(mainTemp);
     
@@ -868,11 +887,20 @@ void UIController::ZoomSliderPosChange(double pos)
     return w;
 }
 
+#include <Fl/Fl_Choice.H>
+Fl_Cursor cursor = FL_CURSOR_DEFAULT;
+
+void choice_cb(Fl_Widget *, void *v) 
+{
+    cursor = (Fl_Cursor)(fl_intptr_t)v;
+}
+
 /*static*/ ZoomWnd* UIController::makeZoomPanel(UIController* controller, int W, int H, const char* l)
 {
     ZoomWnd* w = nullptr;;
     ZoomView* zoomView = nullptr;
     Fl_Group* MainView = nullptr;
+    DrawController* drawController = controller->GetDrawController().get();
     {
         ZoomWnd* z = new ZoomWnd(W, H, l);
         w = z;
@@ -884,26 +912,78 @@ void UIController::ZoomSliderPosChange(double pos)
         z->set_non_modal();
 
         { 
+            {
+                Fl_Group* toolbar = new Fl_Group(0, 0, W, 40);
+                {
+                    { 
+                        Fl_Button* line = new Fl_Button(10, 5, 30, 30);
+                        line->type(1);
+                        line->down_box(FL_DOWN_BOX);
+                        line->image( image_line() );
+                        line->align(Fl_Align(512));
+                        line->callback(DrawController::OnDrawLine, static_cast<void*>(drawController));
+                        line->tooltip("Draw Line");
+                    } // Fl_Button* line
+                    { 
+                        Fl_Button* rect = new Fl_Button(50, 5, 30, 30);
+                        rect->type(1);
+                        rect->down_box(FL_DOWN_BOX);
+                        rect->image( image_rect() );
+                        rect->callback(DrawController::OnDrawRect, static_cast<void*>(drawController));
+                        rect->tooltip("Draw Rect");
+                    } // Fl_Button* rect
+                    { 
+                        Fl_Button* clear = new Fl_Button(90, 5, 30, 30);
+                        clear->image( image_clear_drawing() );
+                        clear->callback(DrawController::OnDrawClear, static_cast<void*>(drawController));
+                        clear->tooltip("Clear drawing");
+                    } // Fl_Button* o
+                    { 
+                        Fl_Box* o = new Fl_Box(130, 3, 3, 34);
+                        o->box(FL_THIN_DOWN_BOX);
+                    } // Fl_Box* o
+                    { 
+                        Fl_Button* lineColor = new Fl_Button(210, 5, 30, 30, "Line color ");
+                        lineColor->color(drawController->GetCurrentColor());
+                        lineColor->align(Fl_Align(FL_ALIGN_LEFT));
+                        lineColor->callback(DrawController::OnChooseColor, static_cast<void*>(drawController));
+                        lineColor->tooltip("Line Color");
+                    } // Fl_Button* lineColor
+                    {
+                        Fl_Choice* choice = new Fl_Choice(320,5,50,30,"Line width ");
+                        choice->menu(drawController->GetLineWidthChoiceItems());
+                        choice->align(Fl_Align(FL_ALIGN_LEFT));
+                        choice->callback(DrawController::OnChangeLineWidth, static_cast<void*>(drawController));
+                        choice->when(FL_WHEN_RELEASE|FL_WHEN_NOT_CHANGED);
+                    }   // Fl_Choice* choice
+                    { 
+                        Fl_Box* o = new Fl_Box(378, 3, 3, 34);
+                        o->box(FL_THIN_DOWN_BOX);
+                    } // Fl_Box* o
+                    { 
+                        zoomSlider = new Fl_Slider(430, 6, 300, 27, "Zoom");
+                        zoomSlider->type(5);
+                        zoomSlider->box(FL_FLAT_BOX);
+                        zoomSlider->minimum(static_cast<int>(ZoomValue::x1));
+                        zoomSlider->maximum(static_cast<int>(ZoomValue::ZoomValueLast) - 1);
+                        zoomSlider->step(1);
+                        zoomSlider->value(static_cast<int>(controller->GetCurrentZoomValue()));
+                        zoomSlider->callback(UIController::OnZoomSliderPosChange, static_cast<void*>(controller));
+                        zoomSlider->align(Fl_Align(FL_ALIGN_LEFT));
+                    } // Fl_Slider* zoomSlider
+                    { 
+                        zoomLabel = new Fl_Box( FL_FLAT_BOX, 730, 5, 25, 25, controller->GetZoomValueString().c_str());
+                        zoomLabel->labeltype(FL_NORMAL_LABEL);
+                        zoomLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
+                    } // Fl_Box* zoomLabel
+                }
+                toolbar->resizable(nullptr);
+                toolbar->end();
+            }
             { 
-                zoomSlider = new Fl_Slider(50, 5, 300, 27, "Zoom");
-                zoomSlider->type(5);
-                zoomSlider->box(FL_FLAT_BOX);
-                zoomSlider->minimum(static_cast<int>(ZoomValue::x1));
-                zoomSlider->maximum(static_cast<int>(ZoomValue::ZoomValueLast) - 1);
-                zoomSlider->step(1);
-                zoomSlider->value(static_cast<int>(controller->GetCurrentZoomValue()));
-                zoomSlider->callback(UIController::OnZoomSliderPosChange, static_cast<void*>(controller));
-                zoomSlider->align(Fl_Align(FL_ALIGN_LEFT));
-            } // Fl_Slider* zoom
-            { 
-                zoomLabel = new Fl_Box( FL_FLAT_BOX, 360, 8, 50, 20, controller->GetZoomValueString().c_str());
-                zoomLabel->labeltype(FL_NORMAL_LABEL);
-                zoomLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
-            } // Fl_Box* zoomLabel
-            { 
-                MainView = new Fl_Group(10, 35, W-20, H-45);
+                MainView = new Fl_Group(10, 40, W-20, H-50);
                 { 
-                    zoomView = new ZoomView(10, 35, W-20, H-45, "This is the Zoom image window");
+                    zoomView = new ZoomView(10, 40, W-20, H-50, "This is the Zoom image window");
                     zoomView->box(FL_NO_BOX);
                     zoomView->color(FL_BACKGROUND_COLOR);
                     zoomView->selection_color(FL_BACKGROUND_COLOR);
@@ -914,14 +994,14 @@ void UIController::ZoomSliderPosChange(double pos)
                     zoomView->align(Fl_Align(FL_ALIGN_CENTER|FL_ALIGN_INSIDE));
                     zoomView->when(FL_WHEN_RELEASE);
                     zoomView->SetUIController(controller);
-                    Fl_Group::current()->resizable(zoomView);
+                    //Fl_Group::current()->resizable(zoomView);
                 } // ZoomView* zoomView
                 MainView->end();
             } // Fl_Group* MainView
         } // Fl_Group* o
+        z->resizable(MainView);
         z->end();
         z->size_range(W, H, 0, 0);
-        z->resizable(MainView);
         z->SetView(zoomView);
     } // Fl_Double_Window* mainWindow
 
@@ -1210,4 +1290,18 @@ void UIController::UpdateCurrentZoomValue(ZoomValue newValue)
 {
     int zoomParam = 1 << static_cast<int>(val);
     return zoomParam;
+}
+
+shared_ptr<DrawController> UIController::GetDrawController()
+{
+    return drawController; 
+}
+
+void UIController::UpdateDrawing()
+{
+    renderWnd->UpdateDrawing();
+    
+    zoomWnd->UpdateDrawing();
+
+    Fl::awake();
 }
