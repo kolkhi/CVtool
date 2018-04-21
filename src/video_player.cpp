@@ -12,7 +12,7 @@ using namespace uavv;
 
 
 #define LICENSE_DIR         "."
-#define TIMEOUT_MS          10000
+#define TIMEOUT_MS          1000
 #define SCROLL_TIMEOUT_MS   500
 #define MOVE_STEP           1.0
 #define IMAGE_CACHE_LIMIT   5
@@ -203,6 +203,9 @@ void VideoPlayer::StartDecoding()
         {
             while(!IsDecodingCancelled())
             {
+                if(isPaused)
+                    continue;
+
                 IUAVVInterface::DecodeVideo(uavvHandler, TIMEOUT_MS);
             }
 
@@ -227,7 +230,7 @@ void VideoPlayer::ResetCancelState()
 void VideoPlayer::PauseDecoding()
 {
     isPaused = true;
-    StopDecoding();
+    //StopDecoding();
 }
 
 bool VideoPlayer::SlideToPosition(float pos)
