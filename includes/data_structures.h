@@ -34,7 +34,7 @@ namespace cvtool
     class Figure2f
     {
         public:
-            Figure2f() : lineWidth(w1), color(FL_BLACK)  {}
+            Figure2f() : lineWidth(LineWidth::w1), color(FL_BLACK)  {}
             virtual ~Figure2f() {}
             LineWidth lineWidth;
             Fl_Color color;
