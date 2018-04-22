@@ -100,13 +100,19 @@ namespace cvtool
             void ZoomSliderPosChange(double pos);
             void FileNameChanged();
 
+
             void ExitApplication();
             void UpdateGLFrameBufferTest();
             void UpdateCurrentZoomValue(ZoomValue newValue);
             void UpdatePosition(float pos);
             void UpdatePlayerControls();
+            void UpdateDrawingButtons();
             
-            void OnRenderMouseDown(int event, float scaledX, float scaledY);
+            // windows event handlers
+            void OnRenderMouseDown(float scaledX, float scaledY);
+            void OnZoomMouseDown(float scaledX, float scaledY);
+            void OnZoomMouseUp(float scaledX, float scaledY);
+            void OnZoomMouseMove(float scaledX, float scaledY);
 
             static UIController* CreateInstance();
 

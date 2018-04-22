@@ -29,6 +29,8 @@ static Fl_Button *pauseBtn=(Fl_Button *)0;
 static Fl_Button *toggleVideoWnd=(Fl_Button *)0;
 static Fl_Button *toggleZoomWnd=(Fl_Button *)0;
 static Fl_Button *toggleKlvWnd=(Fl_Button *)0;
+static Fl_Button *line=(Fl_Button *)0;
+static Fl_Button *rect=(Fl_Button *)0;
 static Fl_Value_Slider *playTrackbar=(Fl_Value_Slider *)0;
 static Fl_Input  *fileNameEdit=(Fl_Input *)0;
 static Fl_Box    *uavvLibVerLabel = (Fl_Box *)0;
@@ -916,17 +918,19 @@ void choice_cb(Fl_Widget *, void *v)
                 Fl_Group* toolbar = new Fl_Group(0, 0, W, 40);
                 {
                     { 
-                        Fl_Button* line = new Fl_Button(10, 5, 30, 30);
+                        line = new Fl_Button(10, 5, 30, 30);
                         line->type(1);
                         line->down_box(FL_DOWN_BOX);
+                        line->selection_color((Fl_Color)55);
                         line->image( image_line() );
                         line->align(Fl_Align(512));
                         line->callback(DrawController::OnDrawLine, static_cast<void*>(drawController));
                         line->tooltip("Draw Line");
                     } // Fl_Button* line
                     { 
-                        Fl_Button* rect = new Fl_Button(50, 5, 30, 30);
+                        rect = new Fl_Button(50, 5, 30, 30);
                         rect->type(1);
+                        rect->selection_color((Fl_Color)55);
                         rect->down_box(FL_DOWN_BOX);
                         rect->image( image_rect() );
                         rect->callback(DrawController::OnDrawRect, static_cast<void*>(drawController));
@@ -1251,7 +1255,7 @@ void UIController::UpdatePlayerControls()
     UpdatePosition(videoPlayer->GetCurrentPosition());
 }
 
-void UIController::OnRenderMouseDown(int event, float scaledX, float scaledY)
+void UIController::OnRenderMouseDown(float scaledX, float scaledY)
 {
     if(zoomState == ZoomState::ZoomIn)
     {
@@ -1304,4 +1308,35 @@ void UIController::UpdateDrawing()
     zoomWnd->UpdateDrawing();
 
     Fl::awake();
+}
+
+void UIController::OnZoomMouseDown(float scaledX, float scaledY)
+{
+    assert(drawController);
+    if(drawController->OnMouseDown(scaledX, scaledY))
+        UpdateDrawing();
+}
+
+void UIController::OnZoomMouseUp(float scaledX, float scaledY)
+{
+    assert(drawController);
+    if(drawController->OnMouseUp(scaledX, scaledY))
+        UpdateDrawing();
+}
+
+void UIController::OnZoomMouseMove(float scaledX, float scaledY)
+{
+    assert(drawController);
+    if(drawController->OnMouseMove(scaledX, scaledY))
+        UpdateDrawing();
+}
+
+void UIController::UpdateDrawingButtons()
+{
+    assert(drawController);
+    if(line)
+        line->value(drawController->IsDrawingLine() ? 1 : 0);
+
+    if(rect)
+        rect->value(drawController->IsDrawingRect() ? 1 : 0);    
 }

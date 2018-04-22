@@ -29,6 +29,8 @@ ZoomView::ZoomView(int X, int Y, int W, int H, const char* l)
             : Fl_Gl_Window(X, Y, W, H, l) 
             , mpFrame(nullptr)
             , zoomParam(1)
+            , offsetX(0)
+            , offsetY(0)
             , mouseScaledX(0.0)
             , mouseScaledY(0.0)
             , updateZoomValue(false)
@@ -108,8 +110,8 @@ void ZoomView::draw()
         int mouseY = std::ceil(mouseScaledY * (float)height);
 
         // calculate offset from mouse click to center point
-        int offsetX = calculateOffset(mouseX, centerX);
-        int offsetY = calculateOffset(mouseY, centerY);
+        offsetX = calculateOffset(mouseX, centerX);
+        offsetY = calculateOffset(mouseY, centerY);
 
         if(updateZoomValue && (isOffsetOutOfBoundary(offsetX, width) || isOffsetOutOfBoundary(offsetY, height)))
         {
@@ -135,7 +137,7 @@ void ZoomView::draw()
         glScalef(zoomParam, zoomParam, 0.0);
 
         // make offset of the clicked point toward center point of the window
-        glTranslatef(-offsetX , -offsetY , 0.0);
+        glTranslatef(-offsetX, -offsetY, 0.0);
         
         // draw GL frame
         mGlFrame.draw();
@@ -164,7 +166,7 @@ void ZoomView::draw()
         glEnd();
 #endif
 
-        drawGeometry();
+        pController->GetDrawController()->drawGeometry();
 
         glPopMatrix();
         glDisable(GL_BLEND);
@@ -220,9 +222,9 @@ void ZoomView::findBestZoomParameterAndUpdate(int mouseX, int mouseY, int center
         newZoomValue = i;
         zoomParam = UIController::GetZoomScaleByValue(static_cast<ZoomValue>(newZoomValue));
 
-        int offsetX = calculateOffset(mouseX, centerX);
-        int offsetY = calculateOffset(mouseY, centerY);
-        if( !isOffsetOutOfBoundary(offsetX, width) && !isOffsetOutOfBoundary(offsetY, height) )
+        int localOffsetX = calculateOffset(mouseX, centerX);
+        int localOffsetY = calculateOffset(mouseY, centerY);
+        if( !isOffsetOutOfBoundary(localOffsetX, width) && !isOffsetOutOfBoundary(localOffsetY, height) )
         {
             break;
         }
@@ -251,28 +253,79 @@ void ZoomView::SetUIController(UIController* controller)
 
 int ZoomView::handle(int event) 
 {
+    auto convertCoordinates = [&](float& x, float& y)
+    {
+        if(mGlFrame.width() == 0 || mGlFrame.height() == 0)
+            return;
+
+        float scale_x = (float)w() / (float)mGlFrame.width();
+        float scale_y = (float)h() / (float)mGlFrame.height();
+        
+        x /= scale_x;
+        y /= scale_y;
+
+        x /= zoomParam;
+        y /= zoomParam;
+
+        x += offsetX;
+        y += offsetY;
+    };
+
     switch(event) 
     {
     case FL_PUSH:
         {
             //... mouse down event ...
             //... position in Fl::event_x() and Fl::event_y()
-            if (!valid())  
             {
-                ortho();
-                valid(1);
-            }
+                if (!valid())
+                {
+                    ortho();
+                    valid(1);
+                }
 
-            //float xpos_scaled =  (float)Fl::event_x() / (float)w();
-            //float ypos_scaled =  (float)(h() - Fl::event_y()) / (float)h();
-            //pController->OnRenderMouseDown(event, xpos_scaled, ypos_scaled);
+                float xpos_scaled =  (float)Fl::event_x();// / (float)w();
+                float ypos_scaled =  (float)(h() - Fl::event_y());// / (float)h();
+
+                convertCoordinates(xpos_scaled, ypos_scaled);
+               
+                pController->OnZoomMouseDown(xpos_scaled, ypos_scaled);
+            }
         }
         return 1;
     case FL_RELEASE:   
         //... mouse up event ...
+            {
+                if (!valid())
+                {
+                    ortho();
+                    valid(1);
+                }
+
+                float xpos_scaled =  (float)Fl::event_x();// / (float)w();
+                float ypos_scaled =  (float)(h() - Fl::event_y());// / (float)h();
+                
+                convertCoordinates(xpos_scaled, ypos_scaled);
+
+                pController->OnZoomMouseUp(xpos_scaled, ypos_scaled);
+            }
         return 1;
-    case FL_DRAG:
-        //... mouse moved while down event ...
+    case FL_MOVE:
+        //... mouse moved event ...
+            {
+                if (!valid())
+                {
+                    ortho();
+                    valid(1);
+                }
+
+                float xpos_scaled =  (float)Fl::event_x();// / (float)w();
+                float ypos_scaled =  (float)(h() - Fl::event_y());// / (float)h();
+
+                convertCoordinates(xpos_scaled, ypos_scaled);
+
+                pController->OnZoomMouseMove(xpos_scaled, ypos_scaled);
+            }
         return 1;
     /*
     case FL_FOCUS :
@@ -291,94 +344,5 @@ int ZoomView::handle(int event)
     default:
         // pass other events to the base class...
         return Fl_Gl_Window::handle(event);
-    }
-}
-
-void ZoomView::drawGeometry()
-{
-    DrawController* drawContoller = pController->GetDrawController().get(); 
-    assert(drawContoller);
-
-    GLfloat lineWidth = static_cast<GLfloat>(static_cast<int>(drawContoller->GetCurrentLineWidth()));
-    Fl_Color c = drawContoller->GetCurrentColor();
-    uchar r,g,b;
-    Fl::get_color(c,r,g,b);
-
-    glLineWidth(lineWidth);
-    glColor3f(r / 255.f, g / 255.f, b / 255.f);
-
-    drawLines();
-    drawRectangles();
-}
-
-void ZoomView::drawLines()
-{
-    DrawController* drawContoller = pController->GetDrawController().get(); 
-    assert(drawContoller);
-
-    int width = mGlFrame.width();
-    int height = mGlFrame.height();
-
-    int mouseX = std::ceil(mouseScaledX * (float)width);
-    int mouseY = std::ceil(mouseScaledY * (float)height);
-
-    glBegin(GL_LINES);
-        glVertex2f(mouseX + 50.f, mouseY + 50.f); 
-        glVertex2f(mouseX - 50.f, mouseY - 50.f); 
-        glVertex2f(mouseX + 50.f, mouseY - 50.f); 
-        glVertex2f(mouseX - 50.f, mouseY + 50.f); 
-    glEnd();
-
-    const DrawModel& model = drawContoller->GetModel();
-    if(model.GetLinesCount() == 0)
-        return;
-
-    glBegin(GL_LINES);
-    for(auto i=0; i<model.GetLinesCount(); i++)
-    {
-        const Line2f* line = model.GetLine(i);
-        if(!line)
-            continue;
-
-        glVertex2f(line->p1.x, line->p1.x); 
-        glVertex2f(line->p2.x, line->p2.x); 
-    }
-    glEnd();
-}
-
-void ZoomView::drawRectangles()
-{
-    DrawController* drawContoller = pController->GetDrawController().get(); 
-    assert(drawContoller);
-
-    int width = mGlFrame.width();
-    int height = mGlFrame.height();
-
-    int mouseX = std::ceil(mouseScaledX * (float)width);
-    int mouseY = std::ceil(mouseScaledY * (float)height);
-
-    glBegin(GL_LINE_LOOP);
-        glVertex2f(mouseX + 20.f, mouseY + 20.f); 
-        glVertex2f(mouseX - 20.f, mouseY + 20.f); 
-        glVertex2f(mouseX - 20.f, mouseY - 20.f); 
-        glVertex2f(mouseX + 20.f, mouseY - 20.f); 
-    glEnd();
-
-    const DrawModel& model = drawContoller->GetModel();
-    if(model.GetRectanglesCount() == 0)
-        return;
-
-    for(auto i=0; i<model.GetRectanglesCount(); i++)
-    {
-        const Rect2f* rect = model.GetRect(i);
-        if(!rect)
-            continue;
-
-        glBegin(GL_LINE_LOOP);
-            glVertex2f(0.5f, 0.5f); 
-            glVertex2f(-0.5f, 0.5f); 
-            glVertex2f(-0.5f, -0.5f); 
-            glVertex2f(0.5f, -0.5f); 
-        glEnd();
     }
 }

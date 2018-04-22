@@ -18,6 +18,8 @@
 
 namespace cvtool
 {
+    class Line2f;
+    class Rect2f;
     class UIController; 
     class ZoomView : public Fl_Gl_Window 
     {
@@ -27,6 +29,8 @@ namespace cvtool
         UAVV_IMAGE  mpFrame;
         std::mutex  imageMutex; 
         int zoomParam;
+        int offsetX;
+        int offsetY;
         float mouseScaledX;
         float mouseScaledY;
         bool updateZoomValue;
@@ -39,10 +43,6 @@ namespace cvtool
         bool isOffsetOutOfBoundary(int offset, int boundary);
         int moveOffsetToClosestBoundary(int offset, int boundary);
         void findBestZoomParameterAndUpdate(int mouseX, int mouseY, int centerX, int centerY, int width, int height);
-
-        void drawGeometry();
-        void drawLines();
-        void drawRectangles();
         
     public:
         ZoomView(int X, int Y, int W, int H, const char* l = 0);

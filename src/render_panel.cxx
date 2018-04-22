@@ -112,6 +112,8 @@ void RenderWnd::draw()
     
     mGlFrame.draw();
 
+    pController->GetDrawController()->drawGeometry();
+
     glPopMatrix();
     glDisable(GL_BLEND);
 
@@ -144,7 +146,7 @@ int RenderWnd::handle(int event)
 
             float xpos_scaled =  (float)Fl::event_x() / (float)w();
             float ypos_scaled =  (float)(h() - Fl::event_y()) / (float)h();
-            pController->OnRenderMouseDown(event, xpos_scaled, ypos_scaled);
+            pController->OnRenderMouseDown(xpos_scaled, ypos_scaled);
         }
         return 1;
     /*
