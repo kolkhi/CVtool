@@ -54,6 +54,10 @@
             "includePath": [
                 "${workspaceRoot}",
                 "${workspaceRoot}/fltk",
+                "${workspaceRoot}/fltk/Fl",
+                "${workspaceRoot}/mathgl",
+                "${workspaceRoot}/mathgl/include",
+                "${workspaceRoot}/mathgl/include/mgl2",
                 "${workspaceRoot}/includes",
                 "F:/Development/mingw-w64/include",
                 "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include/c++",
@@ -74,6 +78,10 @@
             "browse": {
                 "path": [
                     "${workspaceRoot}/fltk",
+                    "${workspaceRoot}/fltk/Fl",
+                    "${workspaceRoot}/mathgl",
+                    "${workspaceRoot}/mathgl/include",
+                    "${workspaceRoot}/mathgl/include/mgl2",
                     "${workspaceRoot}/includes",
                     "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include",
                     "F:/Development/mingw-w64/x86_64/mingw64/lib/gcc/x86_64-w64-mingw32/7.3.0/include-fixed",

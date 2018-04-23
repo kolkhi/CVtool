@@ -24,10 +24,12 @@ ifeq ($(ARCH),linux)
 endif
 
 $(BINARY):  LDLIBS += $(FLTK_LIBS)
-$(BINARY):  LDLIBS += -lstdc++ -pthread -lm libuavv_video.dll
+$(BINARY):  LDLIBS += -L$(LOCALDIR)/mathgl/lib
+$(BINARY):  LDLIBS += -lmgl -lmgl-fltk -lstdc++ -pthread -lm libuavv_video.dll
 
 CFLAGS += -I$(LOCALDIR)/includes
 CFLAGS += -I$(LOCALDIR)/fltk
+CFLAGS += -I$(LOCALDIR)/mathgl/include
 CFLAGS += -m64
 CFLAGS += -DUSE_OPENGL32
 

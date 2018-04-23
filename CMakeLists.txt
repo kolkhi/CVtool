@@ -8,6 +8,8 @@ set(FLTK_DIR ./fltk)
 find_package(FLTK REQUIRED NO_MODULE)
 include_directories(./fltk)
 include_directories(./includes)
+include_directories(./mathgl/include)
+link_directories(./mathgl/lib)
 
 add_executable(CVtool WIN32 ./src/main.cpp ./src/ui_controller.cpp 
                             ./src/main_panel.cxx ./src/render_panel.cxx  
@@ -18,6 +20,8 @@ add_executable(CVtool WIN32 ./src/main.cpp ./src/ui_controller.cpp
 
 target_link_libraries(CVtool fltk)
 target_link_libraries(CVtool fltk_gl)
+target_link_libraries(CVtool mgl)
+target_link_libraries(CVtool mgl-fltk)
 
 if(WIN32)
     target_link_libraries(CVtool ws2_32)
