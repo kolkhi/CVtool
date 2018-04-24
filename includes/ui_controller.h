@@ -7,6 +7,7 @@
 #include <render_panel.h>
 #include <zoom_panel.h>
 #include <klv_panel.h>
+#include <plot_panel.h>
 #include <uavv_image.h>
 #include <data_structures.h>
 #include <vector>
@@ -29,12 +30,14 @@ namespace cvtool
         shared_ptr<RenderWnd> renderWnd;
         shared_ptr<ZoomWnd> zoomWnd;
         shared_ptr<KLVWnd> klvWnd;
+        shared_ptr<PlotWnd> plotWnd;
         shared_ptr<VideoPlayer> videoPlayer;
 
         UAVV_IMAGE imageFrameBuffer;
         bool renderWndVisible;
         bool zoomWndVisible;
         bool klvWndVisible;
+        bool plotWndVisible;
 
         std::string uavvVer;
         std::string streamingState;
@@ -51,10 +54,12 @@ namespace cvtool
             static RenderWnd* makeRenderPanel(UIController* controller, int W, int H, const char* l = 0);
             static ZoomWnd* makeZoomPanel(UIController* controller, int W, int H, const char* l = 0);
             static KLVWnd* makeKlvPanel(UIController* controller, int W, int H, const char* l = 0);
+            static PlotWnd* makePlotPanel(UIController* controller, int W, int H, const char* l = 0);
 
             void UpdateRenderWindowVisibility();
             void UpdateZoomWindowVisibility();
             void UpdateKlvWindowVisibility();
+            void UpdatePlotWindowVisibility();
 
             UIController();
 
@@ -79,6 +84,7 @@ namespace cvtool
             bool IsVideoRenderVisible() const;
             bool IsZoomWindowVisible() const;
             bool IsKlvWindowVisible() const;
+            bool IsPlotWindowVisible() const;
             ZoomValue GetCurrentZoomValue() const;
             void SetupGLWindowUpdateTest();
             void SetupVideoPlayer();
@@ -89,6 +95,8 @@ namespace cvtool
             void ToggleRender();
             void ToggleZoom();
             void ToggleKlv();
+            void TogglePlot();
+            
             void FirstFrame();
             void PreviousFrame();
             void Play();
@@ -125,6 +133,7 @@ namespace cvtool
             static void OnToggleRender(Fl_Widget*, void*);
             static void OnToggleZoom(Fl_Widget*, void*);
             static void OnToggleKlv(Fl_Widget*, void*);
+            static void OnTogglePlot(Fl_Widget*, void*);
             static void OnFirstFrameClick(Fl_Widget*, void*);
             static void OnPreviousFrameClick(Fl_Widget*, void*);
             static void OnPlayClick(Fl_Widget*, void*);
@@ -136,7 +145,7 @@ namespace cvtool
             static void OnSliderPosChange(Fl_Widget*, void*);
             static void OnRenderTimeoutElapsed(void*);
             static void OnChangeFileName(Fl_Widget*, void*); 
-            static void OnZoomSliderPosChange(Fl_Widget* widget, void*);
+            static void OnZoomSliderPosChange(Fl_Widget* widget, void*);            
 
             // video player callbacks 
             static void ImageDecodingNotification(UAVV_IMAGE img, int delay, float pos, void* pUserData);

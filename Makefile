@@ -1,6 +1,7 @@
 TEST_SRC1 = ./src/main.cpp ./src/ui_controller.cpp ./src/video_player.cpp ./src/uavv_wrapper.cpp \
 			./src/xloader.c ./src/main_panel.cxx ./src/render_panel.cxx ./src/zoom_panel.cxx \
-			./src/zoom_view.cxx ./src/klv_panel.cxx ./src/klv_view.cxx ./src/draw_controller.cpp ./src/draw_model.cpp
+			./src/zoom_view.cxx ./src/klv_panel.cxx ./src/klv_view.cxx ./src/draw_controller.cpp ./src/draw_model.cpp \
+			./src/plot_panel.cxx ./src/plot_drawer.cpp
 
 TEST_BIN1 = CVTool$(BIN_EXT)
 
@@ -23,15 +24,20 @@ ifeq ($(ARCH),linux)
     $(BINARY):  LDFLAGS += -L//usr/lib/x86_64-linux-gnu
 endif
 
+$(BINARY):  LDLIBS += -fopenmp
+$(BINARY):  LDLIBS += -lmgl-fltk -lmgl
 $(BINARY):  LDLIBS += $(FLTK_LIBS)
 $(BINARY):  LDLIBS += -L$(LOCALDIR)/mathgl/lib
-$(BINARY):  LDLIBS += -lmgl -lmgl-fltk -lstdc++ -pthread -lm libuavv_video.dll
+$(BINARY):  LDLIBS += -lz -lpng -ljpeg -lstdc++ -pthread -lm libuavv_video.dll
 
 CFLAGS += -I$(LOCALDIR)/includes
 CFLAGS += -I$(LOCALDIR)/fltk
 CFLAGS += -I$(LOCALDIR)/mathgl/include
 CFLAGS += -m64
 CFLAGS += -DUSE_OPENGL32
+CFLAGS += -DMGL_STATIC_DEFINE
+CFLAGS += -DMGL_SRC
+CFLAGS += -fext-numeric-literals
 
 # Define rules for local objects
 $(TEST_BIN1):  $(call GetObj,$(TEST_SRC1)) $(EXTRA_LIBS)
@@ -68,6 +74,12 @@ klv_panel.o:  ./src/klv_panel.cxx
 	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 klv_view.o:  ./src/klv_view.cxx
+	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
+
+plot_panel.o:  ./src/plot_panel.cxx
+	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
+
+plot_drawer.o:  ./src/plot_drawer.cpp
 	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 draw_controller.o:  ./src/draw_controller.cpp

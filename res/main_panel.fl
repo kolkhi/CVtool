@@ -71,58 +71,82 @@ Function {make_main_panel()} {open
     label CVTool
     callback {Fl_Shared_Image *img = (Fl_Shared_Image *)template_preview->image();
 if (img) img->release();} open
-    xywh {1154 386 540 190} type Double
-    class MainWnd non_modal size_range {540 190 540 190} visible
+    xywh {252 366 600 237} type Double
+    class MainWnd non_modal size_range {600 190 600 190} visible
   } {
     Fl_Text_Editor {} {
       label {Video file}
-      private tooltip {Video file path} xywh {25 25 465 25} align 5
+      private tooltip {Video file path} xywh {25 69 525 25} align 5
     }
     Fl_Button loadVideo {
-      private tooltip {Load video file} image {open.png} xywh {490 25 25 25} down_box DOWN_BOX align 512
+      private tooltip {Load video file} image {open.png} xywh {550 69 25 25} down_box DOWN_BOX align 512
     }
     Fl_Pack {} {open
-      private xywh {25 120 330 50} type HORIZONTAL box FLAT_BOX labeltype NO_LABEL when 6
+      private xywh {25 164 330 50} type HORIZONTAL box FLAT_BOX labeltype NO_LABEL when 6
     } {
       Fl_Button firstFrameBtn {
-        private image {first_b.png} xywh {25 125 40 40} align 512
+        private image {first_b.png} xywh {25 169 40 40} align 512
       }
       Fl_Button prevFrameBtn {
-        private image {prev_b.png} xywh {80 125 40 40} align 512
+        private image {prev_b.png} xywh {80 169 40 40} align 512
       }
       Fl_Button playBtn {
-        private image {play_b.png} xywh {135 125 40 40} align 512
+        private image {play_b.png} xywh {135 169 40 40} align 512
       }
       Fl_Button stopBtn {
-        private image {stop_b.png} xywh {190 125 40 40} align 512
+        private image {stop_b.png} xywh {190 169 40 40} align 512
       }
       Fl_Button nexrFramBtne {
-        private image {next_b.png} xywh {245 125 40 40} align 512
+        private image {next_b.png} xywh {245 169 40 40} align 512
       }
       Fl_Button lastFrameBtn {
-        private image {last_b.png} xywh {300 125 40 40} align 512
+        private image {last_b.png} xywh {300 169 40 40} align 512
       }
       Fl_Button pauseBtn {
-        private image {pause_b.png} xywh {135 125 40 40} hide
+        private image {pause_b.png} xywh {135 169 40 40} hide
       }
     }
     Fl_Slider playTrackbar {
-      private xywh {25 75 490 27} type {Horz Knob} box FLAT_BOX maximum 100 step 1
+      private xywh {25 119 550 27} type {Horz Knob} box FLAT_BOX maximum 100 step 1
+    }
+    Fl_Button {} {
+      image {zoomin.png} xywh {485 169 40 40}
+    }
+    Fl_Button {} {
+      image {zoomin_mouse.png} xywh {130 99 25 25}
+    }
+    Fl_Button {} {
+      image {zoomin_mouse.png} xywh {210 99 25 25}
+    }
+    Fl_Button {} {
+      image {klvdata.png} xywh {435 169 40 40}
+    }
+    Fl_Button {} {
+      image {plot.png} xywh {385 169 40 40}
     }
     Fl_Button toggleVideoWnd {
-      private image {toggle.png} xywh {475 125 40 40} type Toggle down_box DOWN_BOX selection_color 55 align 512
+      private image {toggle.png} xywh {535 170 40 40} type Toggle down_box DOWN_BOX selection_color 55 align 512
     }
-    Fl_Button {} {
-      image {zoomin.png} xywh {420 125 40 40}
-    }
-    Fl_Button {} {
-      image {zoomin_mouse.png} xywh {130 55 25 25}
-    }
-    Fl_Button {} {
-      image {zoomin_mouse.png} xywh {210 55 25 25}
-    }
-    Fl_Button {} {selected
-      image {klvdata.png} xywh {375 125 40 40}
+    Fl_Menu_Bar {} {open selected
+      xywh {0 0 600 30}
+    } {
+      Submenu {} {
+        label {&View} open
+        xywh {0 0 62 20}
+      } {
+        MenuItem {} {
+          label {&KLV Data}
+          xywh {0 0 40 20}
+        }
+        MenuItem {} {
+          label {&Plot}
+          xywh {0 0 30 20}
+        }
+        MenuItem {} {
+          label {&Zoom}
+          xywh {0 0 40 20} value 1
+        }
+      }
     }
   }
 }

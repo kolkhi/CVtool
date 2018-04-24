@@ -13,3 +13,7 @@ CVToolOld.exe
 .vscode/last.sql
 .vscode/temp.sql
 mathgl/*
+!mathgl/lib
+!mathgl/include
+mathgl/include/*
+!mathgl/include/mgl2

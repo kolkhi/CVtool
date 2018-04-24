@@ -8,12 +8,16 @@
 #include <Fl/Fl_Value_Slider.H>
 #include <FL/fl_ask.H>
 #include <Fl/Fl_Box.H>
+#include <Fl/Fl_Choice.H> 
 #include <video_player.h>
 #include <zoom_view.h>
 #include <Fl/Fl_Roller.H>
 #include <chrono>
 #include <klv_view.h>
 #include <vector>
+#include <mgl2/Fl_MathGL.h>
+#include <plot_drawer.h>
+
 
 using namespace std;
 using namespace cvtool;
@@ -29,6 +33,7 @@ static Fl_Button *pauseBtn=(Fl_Button *)0;
 static Fl_Button *toggleVideoWnd=(Fl_Button *)0;
 static Fl_Button *toggleZoomWnd=(Fl_Button *)0;
 static Fl_Button *toggleKlvWnd=(Fl_Button *)0;
+static Fl_Button *togglePlotWnd=(Fl_Button *)0;
 static Fl_Button *line=(Fl_Button *)0;
 static Fl_Button *rect=(Fl_Button *)0;
 static Fl_Value_Slider *playTrackbar=(Fl_Value_Slider *)0;
@@ -37,6 +42,7 @@ static Fl_Box    *uavvLibVerLabel = (Fl_Box *)0;
 static Fl_Box    *uavvStreamStateLabel = (Fl_Box *)0;
 static Fl_Slider *zoomSlider=(Fl_Slider *)0;
 static Fl_Box    *zoomLabel = (Fl_Box *)0;
+static Fl_MGLView *mathGlView = (Fl_MGLView *)0;
 
 static Fl_Image *image_open() {
     static Fl_Image *image = new Fl_RGB_Image(idata_open, 20, 20, 4, 0);
@@ -113,6 +119,11 @@ static Fl_Image *image_clear_drawing() {
   return image;
 }
 
+static Fl_Image *image_plot() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_plot, 32, 32, 4, 0);
+  return image;
+}
+
 UIController::UIController() 
     : mainWnd(nullptr)
     , renderWnd(nullptr)
@@ -121,6 +132,7 @@ UIController::UIController()
     , renderWndVisible(true)
     , zoomWndVisible(false)
     , klvWndVisible(false)
+    , plotWndVisible(false)
     , zoomState(ZoomState::ZoomOff)
     , zoomValue(ZoomValue::x2)
 {
@@ -195,14 +207,24 @@ void UIController::InitUIComponents()
         klvWnd->size(Fl::w(), Fl::h());
 
     klvWnd->SetUIController(this);
+
+
+    shared_ptr<PlotWnd> ployTmp(UIController::makePlotPanel(this, FRAME_WIDTH, FRAME_HEIGHT, "Plot"));
+    plotWnd = std::move(ployTmp);
+
+    if ((Fl::w() < plotWnd->w()) || (Fl::h() < plotWnd->h()))
+        plotWnd->size(Fl::w(), Fl::h());
+
+    plotWnd->SetUIController(this);
 }
 
 void UIController::ShowMainWindow(int argc, char *argv[])
 {
-    assert(mainWnd);
-    assert(renderWnd);
-    assert(zoomWnd);
-    assert(klvWnd);
+    assert(mainWnd.get());
+    assert(renderWnd.get());
+    assert(zoomWnd.get());
+    assert(klvWnd.get());
+    assert(plotWnd.get());
 
     if(!mainWnd)
     {
@@ -228,6 +250,12 @@ void UIController::ShowMainWindow(int argc, char *argv[])
         return;
     }
 
+    if(!plotWnd)
+    {
+        fl_message("ERROR: KLV data window is not initialized");
+        return;
+    }
+
     mainWnd->show(argc, argv);
     
     if(renderWndVisible)
@@ -239,6 +267,8 @@ void UIController::ShowMainWindow(int argc, char *argv[])
     if(klvWndVisible)
         klvWnd->show();
 
+    if(plotWndVisible)
+        plotWnd->show();    
 }
 
 void UIController::SetupGLWindowUpdateTest()
@@ -309,6 +339,7 @@ void UIController::FileNameChanged()
 
     zoomWnd->ClearGLFrame();
     klvWnd->ClearData();
+    plotWnd->ClearData();
     //FirstFrame();
     
 }
@@ -378,8 +409,8 @@ bool UIController::IsKlvWindowVisible() const
 
 void UIController::UpdateRenderWindowVisibility()
 {
-    assert(renderWnd);
-    if(!renderWnd)
+    assert(renderWnd.get());
+    if(!renderWnd.get())
         return;
 
     if(renderWndVisible)
@@ -390,8 +421,8 @@ void UIController::UpdateRenderWindowVisibility()
 
 void UIController::UpdateZoomWindowVisibility()
 {
-    assert(zoomWnd);
-    if(!zoomWnd)
+    assert(zoomWnd.get());
+    if(!zoomWnd.get())
         return;
 
     if(zoomWndVisible)
@@ -402,8 +433,8 @@ void UIController::UpdateZoomWindowVisibility()
 
 void UIController::UpdateKlvWindowVisibility()
 {
-    assert(klvWnd);
-    if(!klvWnd)
+    assert(klvWnd.get());
+    if(!klvWnd.get())
         return;
 
     if(klvWndVisible)
@@ -411,6 +442,19 @@ void UIController::UpdateKlvWindowVisibility()
     else
         klvWnd->hide();
 }
+
+void UIController::UpdatePlotWindowVisibility()
+{
+    assert(plotWnd.get());
+    if(!plotWnd.get())
+        return;
+
+    if(plotWndVisible)
+        plotWnd->show();
+    else
+        plotWnd->hide();
+}
+
 
 const std::string& UIController::GetLibraryVersionString()
 {
@@ -494,6 +538,31 @@ void UIController::ToggleKlv()
     }
 
     controller->ToggleKlv();
+}
+
+bool UIController::IsPlotWindowVisible() const
+{
+    return plotWndVisible;
+}
+
+void UIController::TogglePlot()
+{
+    plotWndVisible = !plotWndVisible;
+    togglePlotWnd->value(IsPlotWindowVisible() ? 1 : 0);
+
+    UpdatePlotWindowVisibility();
+}
+
+/*static*/ void UIController::OnTogglePlot(Fl_Widget* sender, void* pUserData)
+{
+    assert(pUserData);
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->TogglePlot();
 }
 
 void UIController::FirstFrame()
@@ -729,9 +798,11 @@ void UIController::ZoomSliderPosChange(double pos)
 
 /*static*/ MainWnd* UIController::makeMainPanel(UIController* controller) 
 {  
+    const int mainWndWidth = 590;
+    const int mainWndHeight = 190;
     MainWnd* main_panel = nullptr;
     { 
-        main_panel = new MainWnd(0, 0, 540, 190, "CVTool");
+        main_panel = new MainWnd(0, 0, mainWndWidth, mainWndHeight, "CVTool");
         main_panel->box(FL_FLAT_BOX);
         main_panel->color(FL_BACKGROUND_COLOR);
         main_panel->selection_color(FL_BACKGROUND_COLOR);
@@ -743,13 +814,13 @@ void UIController::ZoomSliderPosChange(double pos)
         main_panel->align(Fl_Align(FL_ALIGN_CENTER));
         main_panel->when(FL_WHEN_RELEASE);
         { 
-            fileNameEdit = new Fl_Input(25, 25, 465, 25, "Video file");
+            fileNameEdit = new Fl_Input(25, 25, 515, 25, "Video file");
             fileNameEdit->tooltip("Video file path");
             fileNameEdit->align(Fl_Align(FL_ALIGN_TOP_LEFT));
             fileNameEdit->callback(UIController::OnChangeFileName, static_cast<void*>(controller));
         } // Fl_Input* fileNameEdit
         { 
-            loadVideo = new Fl_Button(490, 25, 25, 25);
+            loadVideo = new Fl_Button(540, 25, 25, 25);
             loadVideo->tooltip("Load video file");
             loadVideo->down_box(FL_DOWN_BOX);
             loadVideo->callback(UIController::OnPickFile, static_cast<void*>(controller));
@@ -800,7 +871,7 @@ void UIController::ZoomSliderPosChange(double pos)
         } // Fl_Button* pauseBtn
 
         { 
-            playTrackbar = new Fl_Value_Slider(20, 75, 495, 27);
+            playTrackbar = new Fl_Value_Slider(20, 75, 565, 27);
             playTrackbar->type(5);
             playTrackbar->box(FL_FLAT_BOX);
             playTrackbar->minimum(0.0);
@@ -834,7 +905,19 @@ void UIController::ZoomSliderPosChange(double pos)
         } // Fl_Button* toggleZoomWnd
 
         { 
-            toggleVideoWnd = new Fl_Button(475, 125, 40, 40);
+            togglePlotWnd = new Fl_Button(475, 125, 40, 40);
+            togglePlotWnd->type(1);
+            togglePlotWnd->down_box(FL_DOWN_BOX);
+            togglePlotWnd->selection_color((Fl_Color)55);
+            togglePlotWnd->image( image_plot() );
+            togglePlotWnd->align(Fl_Align(512));
+            togglePlotWnd->value(controller->IsPlotWindowVisible() ? 1 : 0);
+            togglePlotWnd->callback(UIController::OnTogglePlot, static_cast<void*>(controller));
+            togglePlotWnd->tooltip("Show/Hide plot window");
+        } // Fl_Button* toggleVideoWnd
+
+        { 
+            toggleVideoWnd = new Fl_Button(525, 125, 40, 40);
             toggleVideoWnd->type(1);
             toggleVideoWnd->down_box(FL_DOWN_BOX);
             toggleVideoWnd->selection_color((Fl_Color)55);
@@ -860,7 +943,7 @@ void UIController::ZoomSliderPosChange(double pos)
         } // Fl_Box* uavvStreamStateLabel
 
         main_panel->set_non_modal();
-        main_panel->size_range(540, 190, 540, 190);
+        main_panel->size_range(mainWndWidth, mainWndHeight, mainWndWidth, mainWndHeight);
         main_panel->end();
     } // MainWnd* main_panel
 
@@ -887,14 +970,6 @@ void UIController::ZoomSliderPosChange(double pos)
         o->resizable(o);
     } // RenderWnd* o
     return w;
-}
-
-#include <Fl/Fl_Choice.H>
-Fl_Cursor cursor = FL_CURSOR_DEFAULT;
-
-void choice_cb(Fl_Widget *, void *v) 
-{
-    cursor = (Fl_Cursor)(fl_intptr_t)v;
 }
 
 /*static*/ ZoomWnd* UIController::makeZoomPanel(UIController* controller, int W, int H, const char* l)
@@ -1066,8 +1141,42 @@ void choice_cb(Fl_Widget *, void *v)
     return w;
 }
 
+/*static*/ PlotWnd* UIController::makePlotPanel(UIController* controller, int W, int H, const char* l)
+{
+    PlotWnd* w = nullptr;
+    { 
+        PlotWnd* o = new PlotWnd(W, H, l);
+        w = o; if (w) {/* empty */}
+        o->box(FL_FLAT_BOX);
+        o->color(FL_BACKGROUND_COLOR);
+        o->selection_color(FL_BACKGROUND_COLOR);
+        o->labeltype(FL_NO_LABEL);
+        o->labelfont(0);
+        o->labelsize(14);
+        o->labelcolor(FL_FOREGROUND_COLOR);
+        o->when(FL_WHEN_RELEASE);
+        o->callback(UIController::OnTogglePlot, static_cast<void*>(controller));
+        o->set_non_modal();
+        {  
+            mathGlView = new Fl_MGLView(0, 0, W, H, "Plot");
+            PlotDraw* drawer = new PlotDraw();
+            mathGlView->FMGL->set_draw(drawer);
+        }
+
+        o->resizable(mathGlView);
+        o->end();
+        o->size_range(W, H, 0, 0);
+        o->SetPlotView(mathGlView);
+        w->UpdatePlot();
+    } // KLVWnd* o
+    return w;
+}
+
 void UIController::ExitApplication()
 {
+    if(plotWnd->shown())
+        plotWnd->hide();
+
     if(klvWnd->shown())
         klvWnd->hide();
 
@@ -1077,6 +1186,7 @@ void UIController::ExitApplication()
     if(renderWnd->shown())
         renderWnd->hide();
 
+    plotWnd->CleanUp();
     klvWnd->CleanUp();
     zoomWnd->CleanUp();
     renderWnd->CleanUp();
