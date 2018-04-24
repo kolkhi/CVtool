@@ -42,7 +42,7 @@ namespace cvtool
         std::string uavvVer;
         std::string streamingState;
         
-        ZoomState zoomState;
+        ZoomMode zoomState;
         ZoomValue zoomValue;
         std::string zoomValueStr;
         std::vector<KLVItem> klvItems;

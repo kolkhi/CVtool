@@ -18,6 +18,7 @@ ifeq ($(ARCH),win32)
     $(BINARY):  LDFLAGS += -static -static-libgcc -static-libstdc++
     $(BINARY):  LDLIBS += -liconv
     CFLAGS += -mwindows
+	CFLAGS += -fopenmp
 endif
 
 ifeq ($(ARCH),linux)

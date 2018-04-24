@@ -133,7 +133,7 @@ UIController::UIController()
     , zoomWndVisible(false)
     , klvWndVisible(false)
     , plotWndVisible(false)
-    , zoomState(ZoomState::ZoomOff)
+    , zoomState(ZoomMode::ZoomOff)
     , zoomValue(ZoomValue::x2)
 {
     
@@ -496,12 +496,12 @@ void UIController::ToggleZoom()
     toggleZoomWnd->value(IsZoomWindowVisible() ? 1 : 0);
     if(zoomWndVisible)
     {
-        zoomState = ZoomState::ZoomIn;
+        zoomState = ZoomMode::ZoomIn;
         renderWnd->cursor(image_zoomin_mouse(), 10, 10);
     }    
     else
     {
-        zoomState = ZoomState::ZoomOff;
+        zoomState = ZoomMode::ZoomOff;
         renderWnd->cursor(FL_CURSOR_DEFAULT);
     }
 
@@ -1367,7 +1367,7 @@ void UIController::UpdatePlayerControls()
 
 void UIController::OnRenderMouseDown(float scaledX, float scaledY)
 {
-    if(zoomState == ZoomState::ZoomIn)
+    if(zoomState == ZoomMode::ZoomIn)
     {
         const UAVV_IMAGE buf = static_cast<const UAVV_IMAGE>(renderWnd->GetCurrentFrameCopy());
         zoomWnd->UpdateGLFrame(buf, scaledX, scaledY, UIController::GetZoomScaleByValue(zoomValue));
