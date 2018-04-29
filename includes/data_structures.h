@@ -10,7 +10,7 @@ namespace cvtool
     enum class ZoomMode { ZoomOff = 0, ZoomIn = 1 };    
     enum class ZoomValue { x1 = 0, x2, x4, x8, x16, x32, x64, ZoomValueLast };
     enum class LineWidth { w1 = 1, w2 = 2, w3 = 3, w4 = 4, w5 = 5, w6 = 6, w7 = 7, wLast };
-    enum class DrawingMode { DM_None = 0, DM_Line = 1, DM_Rect = 2 };
+    enum class DrawingMode { DM_None = 0, DM_Line = 1, DM_Rect = 2, DM_Polygon = 3 };
     struct KLVItem
     {
         std::string itemName;
@@ -56,6 +56,14 @@ namespace cvtool
             virtual ~Rect2f() override {} 
             Point2f topLeft;
             Point2f bottomRight;
+    };
+
+    class Polygon2f : public Figure2f
+    {
+        public:
+            Polygon2f() {}
+            virtual ~Polygon2f() override {}
+            std::vector<Point2f> points;
     };
 }
 

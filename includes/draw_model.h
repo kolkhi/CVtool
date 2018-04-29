@@ -17,7 +17,8 @@ namespace cvtool
 
             std::vector<Line2f> linesCollection;
             std::vector<Rect2f> rectsCollection;
-    
+            std::vector<Polygon2f> polysCollection;
+            
         public:
             DrawModel();
             ~DrawModel();
@@ -32,6 +33,10 @@ namespace cvtool
             int AddRect(const Point2f& topLeft, const Point2f& bottomRight);
             int AddRect(const Rect2f& rect);
 
+            const Polygon2f* GetPolygon(int index) const;
+            int AddPolygon(const std::vector<Point2f>& points);
+            int AddPolygon(const Polygon2f& poly);
+
             void SetLineWidth(LineWidth lineWidth);
             LineWidth GetLineWidth() const;
 
@@ -40,6 +45,7 @@ namespace cvtool
 
             int GetRectanglesCount() const;
             int GetLinesCount() const;
+            int GetPolygonsCount() const;
     };
 }
 

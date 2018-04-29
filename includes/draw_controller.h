@@ -3,6 +3,10 @@
 
 #include <draw_model.h>
 #include <Fl/Fl_Menu_Item.H>
+#include <json/json.h>
+#include <deque>
+
+#define UNDO_LIMIT 10
 
 using namespace std;
 
@@ -17,6 +21,8 @@ namespace cvtool
         int mouseClickCount;
         Figure2f* previewFigure;
 
+        std::deque<DrawModel> undoCollection;
+
         protected:
             DrawController(); 
 
@@ -24,28 +30,43 @@ namespace cvtool
 
             void ChangeLineWidth(int index);
             bool ChooseNewColor();
-            void ClearDrawing();
+            void RemoveLastAddedFigure();
 
             void Redraw();
 
             void EnableLineDrawingMode();
             void EnableRectDrawingMode();
+            void EnablePolygonDrawingMode();
             void DisableDrawing();
             void ResetDrawingParameters();
 
             void drawLines();
             void drawRectangles();
+            void drawPolygons();
             void drawPreview();
 
             void drawLine(const Line2f* line);
             void drawRect(const Rect2f* rect);
+            void drawPolygon(const Polygon2f* polygon);
 
+            void AddToUndo();
+            bool Undo();
+
+            void LoadGeometryFromFile(const std::string& filePath);
+            void SaveGeometryToFile(const std::string& filePath);    
+
+            void ReadLatestVersion(const Json::Value& val);
+            bool ParseLine(const Json::Value& value, Line2f& line);
+            bool ParseRect(const Json::Value& value, Rect2f& rect);
+            bool ParsePoly(const Json::Value& value, Polygon2f& poly);
         public:
 
             ~DrawController();
-
+            
+            void ClearDrawing();
             bool IsDrawingLine();
             bool IsDrawingRect();
+            bool IsDrawingPolygon();
 
             void drawGeometry();
             
@@ -65,16 +86,22 @@ namespace cvtool
             LineWidth GetCurrentLineWidth() const;
 
             // mouse event handlers
-            bool OnMouseDown(float scaledX, float scaledY);
-            bool OnMouseUp(float scaledX, float scaledY);
+            bool OnMouseLeftDown(float scaledX, float scaledY);
+            bool OnMouseLeftUp(float scaledX, float scaledY);
+            bool OnMouseRightDown(float scaledX, float scaledY);
+            bool OnMouseRightUp(float scaledX, float scaledY);
             bool OnMouseMove(float scaledX, float scaledY);
 
             // widget event static handlers
             static void OnDrawLine(Fl_Widget* sender, void* pUserData);
             static void OnDrawRect(Fl_Widget* sender, void* pUserData);
+            static void OnDrawPolygon(Fl_Widget* sender, void* pUserData);
             static void OnDrawClear(Fl_Widget* sender, void* pUserData);
+            static void OnDrawUndo(Fl_Widget* sender, void* pUserData);
             static void OnChooseColor(Fl_Widget* sender, void* pUserData);
             static void OnChangeLineWidth(Fl_Widget* sender, void* pUserData);
+            static void OnLoadGeometry(Fl_Widget* sender, void* pUserData);
+            static void OnSaveGeometry(Fl_Widget* sender, void* pUserData);
     };
 }
 

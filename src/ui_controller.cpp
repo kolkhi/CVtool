@@ -36,6 +36,7 @@ static Fl_Button *toggleKlvWnd=(Fl_Button *)0;
 static Fl_Button *togglePlotWnd=(Fl_Button *)0;
 static Fl_Button *line=(Fl_Button *)0;
 static Fl_Button *rect=(Fl_Button *)0;
+static Fl_Button *poly=(Fl_Button *)0;
 static Fl_Value_Slider *playTrackbar=(Fl_Value_Slider *)0;
 static Fl_Input  *fileNameEdit=(Fl_Input *)0;
 static Fl_Box    *uavvLibVerLabel = (Fl_Box *)0;
@@ -124,6 +125,26 @@ static Fl_Image *image_plot() {
   return image;
 }
 
+static Fl_Image *image_poly() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_poly, 22, 22, 4, 0);
+  return image;
+}
+
+static Fl_Image *image_save() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_save, 22, 22, 4, 0);
+  return image;
+}
+
+static Fl_Image *image_load() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_load, 22, 22, 4, 0);
+  return image;
+}
+
+static Fl_Image *image_undo() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_undo, 22, 22, 4, 0);
+  return image;
+}
+
 UIController::UIController() 
     : mainWnd(nullptr)
     , renderWnd(nullptr)
@@ -192,7 +213,7 @@ void UIController::InitUIComponents()
     renderWnd->SetUIController(this);
 
 
-    shared_ptr<ZoomWnd> zoomTmp(UIController::makeZoomPanel(this, FRAME_WIDTH, FRAME_HEIGHT, "Zoom Image"));
+    shared_ptr<ZoomWnd> zoomTmp(UIController::makeZoomPanel(this, ZOOM_FRAME_WIDTH, ZOOM_FRAME_HEIGHT, "Zoom Image"));
     zoomWnd = std::move(zoomTmp);
 
     if ((Fl::w() < zoomWnd->w()) || (Fl::h() < zoomWnd->h()))
@@ -993,7 +1014,25 @@ void UIController::ZoomSliderPosChange(double pos)
                 Fl_Group* toolbar = new Fl_Group(0, 0, W, 40);
                 {
                     { 
-                        line = new Fl_Button(10, 5, 30, 30);
+                        Fl_Button* loadgeom = new Fl_Button(10, 5, 30, 30);
+                        loadgeom->image( image_load() );
+                        loadgeom->callback(DrawController::OnLoadGeometry, static_cast<void*>(drawController));
+                        loadgeom->tooltip("Load geometry");
+                    } // Fl_Button* o
+                    { 
+                        Fl_Button* savegeom = new Fl_Button(50, 5, 30, 30);
+                        savegeom->image( image_save() );
+                        savegeom->callback(DrawController::OnSaveGeometry, static_cast<void*>(drawController));
+                        savegeom->tooltip("Save geometry");
+                    } // Fl_Button* o
+                    { 
+                        Fl_Box* o = new Fl_Box(90, 3, 3, 34);
+                        o->box(FL_THIN_DOWN_BOX);
+                    } // Fl_Box* o
+
+                    int x_offset = 93;
+                    { 
+                        line = new Fl_Button(x_offset + 10, 5, 30, 30);
                         line->type(1);
                         line->down_box(FL_DOWN_BOX);
                         line->selection_color((Fl_Color)55);
@@ -1003,7 +1042,7 @@ void UIController::ZoomSliderPosChange(double pos)
                         line->tooltip("Draw Line");
                     } // Fl_Button* line
                     { 
-                        rect = new Fl_Button(50, 5, 30, 30);
+                        rect = new Fl_Button(x_offset + 50, 5, 30, 30);
                         rect->type(1);
                         rect->selection_color((Fl_Color)55);
                         rect->down_box(FL_DOWN_BOX);
@@ -1012,35 +1051,50 @@ void UIController::ZoomSliderPosChange(double pos)
                         rect->tooltip("Draw Rect");
                     } // Fl_Button* rect
                     { 
-                        Fl_Button* clear = new Fl_Button(90, 5, 30, 30);
+                        poly = new Fl_Button(x_offset + 90, 5, 30, 30);
+                        poly->type(1);
+                        poly->selection_color((Fl_Color)55);
+                        poly->down_box(FL_DOWN_BOX);
+                        poly->image( image_poly() );
+                        poly->callback(DrawController::OnDrawPolygon, static_cast<void*>(drawController));
+                        poly->tooltip("Draw Polygon");
+                    } // Fl_Button* poly
+                    { 
+                        Fl_Button* clear = new Fl_Button(x_offset + 130, 5, 30, 30);
+                        clear->image( image_undo() );
+                        clear->callback(DrawController::OnDrawUndo, static_cast<void*>(drawController));
+                        clear->tooltip("Undo");
+                    } // Fl_Button* o
+                    { 
+                        Fl_Button* clear = new Fl_Button(x_offset + 170, 5, 30, 30);
                         clear->image( image_clear_drawing() );
                         clear->callback(DrawController::OnDrawClear, static_cast<void*>(drawController));
                         clear->tooltip("Clear drawing");
                     } // Fl_Button* o
                     { 
-                        Fl_Box* o = new Fl_Box(130, 3, 3, 34);
+                        Fl_Box* o = new Fl_Box(x_offset + 210, 3, 3, 34);
                         o->box(FL_THIN_DOWN_BOX);
                     } // Fl_Box* o
                     { 
-                        Fl_Button* lineColor = new Fl_Button(210, 5, 30, 30, "Line color ");
+                        Fl_Button* lineColor = new Fl_Button(x_offset + 290, 5, 30, 30, "Line color ");
                         lineColor->color(drawController->GetCurrentColor());
                         lineColor->align(Fl_Align(FL_ALIGN_LEFT));
                         lineColor->callback(DrawController::OnChooseColor, static_cast<void*>(drawController));
                         lineColor->tooltip("Line Color");
                     } // Fl_Button* lineColor
                     {
-                        Fl_Choice* choice = new Fl_Choice(320,5,50,30,"Line width ");
+                        Fl_Choice* choice = new Fl_Choice(x_offset + 410,5,50,30,"Line width ");
                         choice->menu(drawController->GetLineWidthChoiceItems());
                         choice->align(Fl_Align(FL_ALIGN_LEFT));
                         choice->callback(DrawController::OnChangeLineWidth, static_cast<void*>(drawController));
                         choice->when(FL_WHEN_RELEASE|FL_WHEN_NOT_CHANGED);
                     }   // Fl_Choice* choice
                     { 
-                        Fl_Box* o = new Fl_Box(378, 3, 3, 34);
+                        Fl_Box* o = new Fl_Box(x_offset + 458, 3, 3, 34);
                         o->box(FL_THIN_DOWN_BOX);
                     } // Fl_Box* o
                     { 
-                        zoomSlider = new Fl_Slider(430, 6, 300, 27, "Zoom");
+                        zoomSlider = new Fl_Slider(x_offset + 510, 6, 200, 27, "Zoom");
                         zoomSlider->type(5);
                         zoomSlider->box(FL_FLAT_BOX);
                         zoomSlider->minimum(static_cast<int>(ZoomValue::x1));
@@ -1051,7 +1105,7 @@ void UIController::ZoomSliderPosChange(double pos)
                         zoomSlider->align(Fl_Align(FL_ALIGN_LEFT));
                     } // Fl_Slider* zoomSlider
                     { 
-                        zoomLabel = new Fl_Box( FL_FLAT_BOX, 730, 5, 25, 25, controller->GetZoomValueString().c_str());
+                        zoomLabel = new Fl_Box( FL_FLAT_BOX, x_offset + 720, 5, 25, 25, controller->GetZoomValueString().c_str());
                         zoomLabel->labeltype(FL_NORMAL_LABEL);
                         zoomLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
                     } // Fl_Box* zoomLabel
@@ -1420,17 +1474,31 @@ void UIController::UpdateDrawing()
     Fl::awake();
 }
 
-void UIController::OnZoomMouseDown(float scaledX, float scaledY)
+void UIController::OnZoomMouseLeftDown(float scaledX, float scaledY)
 {
     assert(drawController);
-    if(drawController->OnMouseDown(scaledX, scaledY))
+    if(drawController->OnMouseLeftDown(scaledX, scaledY))
         UpdateDrawing();
 }
 
-void UIController::OnZoomMouseUp(float scaledX, float scaledY)
+void UIController::OnZoomMouseLeftUp(float scaledX, float scaledY)
 {
     assert(drawController);
-    if(drawController->OnMouseUp(scaledX, scaledY))
+    if(drawController->OnMouseLeftUp(scaledX, scaledY))
+        UpdateDrawing();
+}
+
+void UIController::OnZoomMouseRightDown(float scaledX, float scaledY)
+{
+    assert(drawController);
+    if(drawController->OnMouseRightDown(scaledX, scaledY))
+        UpdateDrawing();
+}
+
+void UIController::OnZoomMouseRightUp(float scaledX, float scaledY)
+{
+    assert(drawController);
+    if(drawController->OnMouseRightUp(scaledX, scaledY))
         UpdateDrawing();
 }
 
@@ -1448,5 +1516,8 @@ void UIController::UpdateDrawingButtons()
         line->value(drawController->IsDrawingLine() ? 1 : 0);
 
     if(rect)
-        rect->value(drawController->IsDrawingRect() ? 1 : 0);    
+        rect->value(drawController->IsDrawingRect() ? 1 : 0);   
+
+    if(poly)
+        poly->value(drawController->IsDrawingPolygon() ? 1 : 0);    
 }

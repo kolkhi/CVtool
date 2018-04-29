@@ -20,7 +20,8 @@ DrawModel::~DrawModel()
 void DrawModel::Clear()
 {
     linesCollection.clear();
-    rectsCollection.clear();                             
+    rectsCollection.clear(); 
+    polysCollection.clear();                  
 }
 
 const Line2f* DrawModel::GetLine(int index) const
@@ -67,6 +68,27 @@ int DrawModel::AddRect(const Rect2f& rect)
     return (static_cast<int>(rectsCollection.size()) - 1);
 }
 
+const Polygon2f* DrawModel::GetPolygon(int index) const
+{
+    if(index < 0 || index >= static_cast<int>(polysCollection.size()))
+        return nullptr;
+
+    return &polysCollection[index];
+}
+
+int DrawModel::AddPolygon(const std::vector<Point2f>& points)
+{
+    Polygon2f polygon;
+    polygon.points.insert(polygon.points.begin(), points.begin(), points.end());
+    return AddPolygon(polygon);
+}
+
+int DrawModel::AddPolygon(const Polygon2f& poly)
+{
+    polysCollection.push_back(poly);
+    return (static_cast<int>(polysCollection.size()) - 1);
+}
+
 void DrawModel::SetLineWidth(LineWidth lineWidth)
 {
     currentLineWidth = lineWidth;
@@ -95,4 +117,9 @@ int DrawModel::GetRectanglesCount() const
 int DrawModel::GetLinesCount() const
 {
     return static_cast<int>(linesCollection.size());
+}
+
+int DrawModel::GetPolygonsCount() const
+{
+    return static_cast<int>(polysCollection.size());
 }

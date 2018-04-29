@@ -15,6 +15,9 @@
  Video zoom window
 */
 
+#define ZOOM_FRAME_WIDTH             900
+#define ZOOM_FRAME_HEIGHT            600
+
 namespace cvtool
 {
     class UIController;

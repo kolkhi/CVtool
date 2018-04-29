@@ -118,8 +118,10 @@ namespace cvtool
             
             // windows event handlers
             void OnRenderMouseDown(float scaledX, float scaledY);
-            void OnZoomMouseDown(float scaledX, float scaledY);
-            void OnZoomMouseUp(float scaledX, float scaledY);
+            void OnZoomMouseLeftDown(float scaledX, float scaledY);
+            void OnZoomMouseLeftUp(float scaledX, float scaledY);
+            void OnZoomMouseRightDown(float scaledX, float scaledY);
+            void OnZoomMouseRightUp(float scaledX, float scaledY);
             void OnZoomMouseMove(float scaledX, float scaledY);
 
             static UIController* CreateInstance();

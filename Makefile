@@ -1,7 +1,7 @@
 TEST_SRC1 = ./src/main.cpp ./src/ui_controller.cpp ./src/video_player.cpp ./src/uavv_wrapper.cpp \
 			./src/xloader.c ./src/main_panel.cxx ./src/render_panel.cxx ./src/zoom_panel.cxx \
 			./src/zoom_view.cxx ./src/klv_panel.cxx ./src/klv_view.cxx ./src/draw_controller.cpp ./src/draw_model.cpp \
-			./src/plot_panel.cxx ./src/plot_drawer.cpp
+			./src/plot_panel.cxx ./src/plot_drawer.cpp ./src/jsoncpp.cpp
 
 TEST_BIN1 = CVTool$(BIN_EXT)
 
@@ -88,6 +88,9 @@ draw_controller.o:  ./src/draw_controller.cpp
 
 draw_model.o:  ./src/draw_model.cpp
 	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
+
+jsoncpp.o:  ./src/jsoncpp.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 .PHONY: clear
 

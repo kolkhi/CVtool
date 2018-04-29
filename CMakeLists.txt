@@ -17,7 +17,7 @@ add_executable(CVtool WIN32 ./src/main.cpp ./src/ui_controller.cpp
                             ./src/zoom_panel.cxx ./src/zoom_view.cxx 
                             ./src/klv_panel.cxx ./src/klv_view.cxx
                             ./src/draw_controller.cpp ./src/draw_model.cpp
-                            ./src/plot_panel.cxx ./src/plot_drawer.cpp)
+                            ./src/plot_panel.cxx ./src/plot_drawer.cpp ./src/jsoncpp.cpp)
 
 target_link_libraries(CVtool mgl-fltk)
 target_link_libraries(CVtool mgl)

@@ -38,11 +38,23 @@ Function {make_window()} {open private
         label x1
         xywh {728 5 25 25}
       }
-      Fl_Button {} {selected
+      Fl_Button {} {
         image {clear_drawing.png} xywh {90 5 30 30}
       }
+      Fl_Button {} {
+        image {poly.png} xywh {10 40 30 30}
+      }
+      Fl_Button {} {
+        image {save.png} xywh {50 40 30 30}
+      }
+      Fl_Button {} {
+        image {undo.png} xywh {90 40 30 30}
+      }
+      Fl_Button {} {
+        image {load.png} xywh {130 40 30 30}
+      }
     }
-    Fl_Group {} {open
+    Fl_Group {} {open selected
       xywh {15 129 780 441}
     } {}
   }

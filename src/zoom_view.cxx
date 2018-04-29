@@ -45,6 +45,8 @@ void ZoomView::ClearGLFrame()
 {
     IUAVVInterface::DestroyImageHandle(mpFrame);
     mpFrame = nullptr;
+
+    pController->GetDrawController()->ClearDrawing();
     redraw();
 }
 
@@ -289,7 +291,10 @@ int ZoomView::handle(int event)
 
                 convertCoordinates(xpos_scaled, ypos_scaled);
                
-                pController->OnZoomMouseDown(xpos_scaled, ypos_scaled);
+                if(Fl::event_button() == FL_LEFT_MOUSE)
+                    pController->OnZoomMouseLeftDown(xpos_scaled, ypos_scaled);
+                else if(Fl::event_button() == FL_RIGHT_MOUSE)
+                    pController->OnZoomMouseRightDown(xpos_scaled, ypos_scaled);
             }
         }
         return 1;
@@ -307,7 +312,10 @@ int ZoomView::handle(int event)
                 
                 convertCoordinates(xpos_scaled, ypos_scaled);
 
-                pController->OnZoomMouseUp(xpos_scaled, ypos_scaled);
+                if(Fl::event_button() == FL_LEFT_MOUSE)
+                    pController->OnZoomMouseLeftUp(xpos_scaled, ypos_scaled);
+                else if(Fl::event_button() == FL_RIGHT_MOUSE)
+                    pController->OnZoomMouseRightUp(xpos_scaled, ypos_scaled);
             }
         return 1;
     case FL_MOVE:

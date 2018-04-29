@@ -49,7 +49,16 @@
 			"ctime": "cpp",
 			"mutex": "cpp",
 			"ratio": "cpp",
-			"utility": "cpp"
+			"utility": "cpp",
+			"cmath": "cpp",
+			"complex": "cpp",
+			"cstring": "cpp",
+			"cwctype": "cpp",
+			"fstream": "cpp",
+			"iomanip": "cpp",
+			"optional": "cpp",
+			"sstream": "cpp",
+			"cinttypes": "cpp"
 		}
 	}
 }
