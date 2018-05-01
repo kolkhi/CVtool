@@ -17,7 +17,13 @@
 #include <vector>
 #include <mgl2/Fl_MathGL.h>
 #include <plot_drawer.h>
+#include <fstream> 
 
+const std::string mainkey = "mainwnd";
+const std::string zoomkey = "zoomwnd";
+const std::string klvkey = "klvwnd";
+const std::string plotkey = "plotwnd";
+const std::string renderkey = "renderwnd";
 
 using namespace std;
 using namespace cvtool;
@@ -48,6 +54,11 @@ static Fl_MGLView *mathGlView = (Fl_MGLView *)0;
 static Fl_Image *image_open() {
     static Fl_Image *image = new Fl_RGB_Image(idata_open, 20, 20, 4, 0);
     return image;
+}
+
+static Fl_Image *image_clipboard() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_clipboard, 20, 20, 4, 0);
+  return image;
 }
 
 static Fl_Image *image_first_b() {
@@ -237,6 +248,8 @@ void UIController::InitUIComponents()
         plotWnd->size(Fl::w(), Fl::h());
 
     plotWnd->SetUIController(this);
+
+    LoadLayout();
 }
 
 void UIController::ShowMainWindow(int argc, char *argv[])
@@ -412,6 +425,32 @@ void UIController::FileNameChanged()
       break;
   }
 }
+
+void UIController::PasteClipboard()
+{
+#ifdef WIN32
+    int res = Fl::clipboard_contains(Fl::clipboard_image);
+
+    // cliboard contains image
+    if(res != 0)
+    {
+        Stop();
+        Fl::paste(*renderWnd, 1, Fl::clipboard_image);
+    }
+#endif
+}
+
+/*static*/ void UIController::OnPasteClipboard(Fl_Widget* widget, void* pUserData)
+{
+    assert(pUserData);
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->PasteClipboard();
+} 
 
 bool UIController::IsVideoRenderVisible() const
 {
@@ -834,20 +873,39 @@ void UIController::ZoomSliderPosChange(double pos)
         main_panel->callback(UIController::OnCloseMainWnd, static_cast<void*>(controller));
         main_panel->align(Fl_Align(FL_ALIGN_CENTER));
         main_panel->when(FL_WHEN_RELEASE);
+
+
+        int startPosX = 25;
+        int fileNameW = 490;
+        int videoButtonXoffset = 25;
+
+#ifdef WIN32
+        fileNameW -= 30;
+#endif
         { 
-            fileNameEdit = new Fl_Input(25, 25, 515, 25, "Video file");
+            fileNameEdit = new Fl_Input(startPosX, 25, startPosX + fileNameW, 25, "Video file");
             fileNameEdit->tooltip("Video file path");
             fileNameEdit->align(Fl_Align(FL_ALIGN_TOP_LEFT));
             fileNameEdit->callback(UIController::OnChangeFileName, static_cast<void*>(controller));
         } // Fl_Input* fileNameEdit
         { 
-            loadVideo = new Fl_Button(540, 25, 25, 25);
+            loadVideo = new Fl_Button(startPosX + fileNameW + videoButtonXoffset, 25, 25, 25);
             loadVideo->tooltip("Load video file");
             loadVideo->down_box(FL_DOWN_BOX);
             loadVideo->callback(UIController::OnPickFile, static_cast<void*>(controller));
             loadVideo->image( image_open() );   
         } // Fl_Button* loadVideo
         
+#ifdef WIN32
+        { 
+            Fl_Button* pasteClipboard = new Fl_Button(startPosX + fileNameW + videoButtonXoffset + 30, 25, 25, 25);
+            pasteClipboard->tooltip("Paste image from clipboard");
+            pasteClipboard->down_box(FL_DOWN_BOX);
+            pasteClipboard->callback(UIController::OnPasteClipboard, static_cast<void*>(controller));
+            pasteClipboard->image( image_clipboard() );   
+        } // Fl_Button* loadVideo
+#endif
+
         { 
             firstFrameBtn = new Fl_Button(25, 125, 40, 40);
             firstFrameBtn->image( image_first_b() );
@@ -892,7 +950,7 @@ void UIController::ZoomSliderPosChange(double pos)
         } // Fl_Button* pauseBtn
 
         { 
-            playTrackbar = new Fl_Value_Slider(20, 75, 565, 27);
+            playTrackbar = new Fl_Value_Slider(20, 75, 545, 27);
             playTrackbar->type(5);
             playTrackbar->box(FL_FLAT_BOX);
             playTrackbar->minimum(0.0);
@@ -1187,9 +1245,9 @@ void UIController::ZoomSliderPosChange(double pos)
             klvtable->col_width(2, colWidth * 0.1);
         }
 
+        o->resizable(klvtable);
         o->end();
         o->size_range(W, H, 0, 0);
-        o->resizable(klvtable);
         o->SetKLVDataView(klvtable);
     } // KLVWnd* o
     return w;
@@ -1245,6 +1303,7 @@ void UIController::ExitApplication()
     zoomWnd->CleanUp();
     renderWnd->CleanUp();
 
+    SaveLayout();
     exit(0);
 }
 
@@ -1520,4 +1579,260 @@ void UIController::UpdateDrawingButtons()
 
     if(poly)
         poly->value(drawController->IsDrawingPolygon() ? 1 : 0);    
+}
+
+void UIController::SaveLayout()
+{
+    try
+    {
+        Json::Value root;
+
+        Json::Value& layout = root["layout"];
+
+        layout[mainkey]["x"] = mainWnd->x_root();
+        layout[mainkey]["y"] = mainWnd->y_root();
+
+        layout[zoomkey]["x"] = zoomWnd->x_root();
+        layout[zoomkey]["y"] = zoomWnd->y_root();
+        layout[zoomkey]["w"] = zoomWnd->w();
+        layout[zoomkey]["h"] = zoomWnd->h();
+        layout[zoomkey]["visible"] = zoomWndVisible;
+
+        layout[klvkey]["x"] = klvWnd->x_root();
+        layout[klvkey]["y"] = klvWnd->y_root();
+        layout[klvkey]["w"] = klvWnd->w();
+        layout[klvkey]["h"] = klvWnd->h();
+        layout[klvkey]["visible"] = klvWndVisible;
+
+        layout[plotkey]["x"] = plotWnd->x_root();
+        layout[plotkey]["y"] = plotWnd->y_root();
+        layout[plotkey]["w"] = plotWnd->w();
+        layout[plotkey]["h"] = plotWnd->h();
+        layout[plotkey]["visible"] = plotWndVisible;
+
+        layout[renderkey]["x"] = renderWnd->x_root();
+        layout[renderkey]["y"] = renderWnd->y_root();
+        layout[renderkey]["w"] = renderWnd->w();
+        layout[renderkey]["h"] = renderWnd->h();
+        layout[renderkey]["visible"] = renderWndVisible;
+
+        Json::StreamWriterBuilder builder;
+        std::string document = Json::writeString(builder, root);
+
+        std::ofstream file(LAYOUT_FILE);
+        file << document << std::endl;  // add lf and flush
+        file.close();
+    }
+    catch(exception& ex)
+    {
+        fprintf(stderr, "ERROR: %s\n", ex.what()); 
+        fl_message("ERROR: %s\n", ex.what());
+    }
+}
+
+void UIController::LoadRenderWindowLayout(const Json::Value& layout)
+{
+    assert(renderWnd);
+
+    Json::Value X = layout["x"];
+    Json::Value Y = layout["y"];
+    if(X.isNumeric() && Y.isNumeric())
+    {
+        renderWnd->position(X.asFloat(), Y.asFloat());
+    }
+
+    Json::Value W = layout["w"];
+    Json::Value H = layout["h"];
+    if(W.isNumeric() && H.isNumeric())
+    {
+        renderWnd->size(W.asFloat(), H.asFloat());
+    }
+
+    Json::Value visible = layout["visible"]; 
+    if(visible.isBool())
+    {
+        if(visible.asBool() != IsVideoRenderVisible())    
+            ToggleRender();
+    }
+}
+
+void UIController::LoadZoomWindowLayout(const Json::Value& layout)
+{
+    assert(zoomWnd);
+
+    Json::Value X = layout["x"];
+    Json::Value Y = layout["y"];
+    if(X.isNumeric() && Y.isNumeric())
+    {
+        zoomWnd->position(X.asFloat(), Y.asFloat());
+    }
+
+    Json::Value W = layout["w"];
+    Json::Value H = layout["h"];
+    if(W.isNumeric() && H.isNumeric())
+    {
+        zoomWnd->size(W.asFloat(), H.asFloat());
+    }
+
+    Json::Value visible = layout["visible"]; 
+    if(visible.isBool())
+    {
+        if(visible.asBool() != IsZoomWindowVisible())    
+            ToggleZoom(); 
+    }
+}
+
+void UIController::LoadKLVWindowLayout(const Json::Value& layout)
+{
+    assert(klvWnd);
+
+    Json::Value X = layout["x"];
+    Json::Value Y = layout["y"];
+    if(X.isNumeric() && Y.isNumeric())
+    {
+        klvWnd->position(X.asFloat(), Y.asFloat());
+    }
+
+    Json::Value W = layout["w"];
+    Json::Value H = layout["h"];
+    if(W.isNumeric() && H.isNumeric())
+    {
+        klvWnd->size(W.asFloat(), H.asFloat());
+    }
+
+    Json::Value visible = layout["visible"]; 
+    if(visible.isBool())
+    {
+        if(visible.asBool() != IsKlvWindowVisible())    
+            ToggleKlv(); 
+    }
+}
+
+void UIController::LoadPlotWindowLayout(const Json::Value& layout)
+{
+    assert(plotWnd);
+
+    Json::Value X = layout["x"];
+    Json::Value Y = layout["y"];
+    if(X.isNumeric() && Y.isNumeric())
+    {
+        plotWnd->position(X.asFloat(), Y.asFloat());
+    }
+
+    Json::Value W = layout["w"];
+    Json::Value H = layout["h"];
+    if(W.isNumeric() && H.isNumeric())
+    {
+        plotWnd->size(W.asFloat(), H.asFloat());
+    }
+
+    Json::Value visible = layout["visible"]; 
+    if(visible.isBool())
+    {
+        if(visible.asBool() != IsPlotWindowVisible())    
+            TogglePlot(); 
+    }
+}
+
+void UIController::LoadLayout()
+{
+    assert(mainWnd);
+    try
+    {
+        std::ifstream file(LAYOUT_FILE);
+        Json::CharReaderBuilder rbuilder;
+        std::string errs;
+        Json::Value root;
+        bool ok = Json::parseFromStream(rbuilder, file, &root, &errs);
+        if(!ok)
+            throw std::runtime_error("File loading failed: " + errs);
+
+        Json::Value layout = root["layout"];
+        if(layout.isObject())
+        {
+            Json::Value mainX = layout[mainkey]["x"];
+            Json::Value mainY = layout[mainkey]["y"];
+            if(mainX.isNumeric() && mainY.isNumeric())
+            {
+                mainWnd->position(mainX.asFloat(), mainY.asFloat());
+            }
+
+            LoadRenderWindowLayout(layout[renderkey]);
+            LoadZoomWindowLayout(layout[zoomkey]);
+            LoadKLVWindowLayout(layout[klvkey]);
+            LoadPlotWindowLayout(layout[plotkey]);
+        }
+    }
+    catch(exception& ex)
+    {
+        fprintf(stderr, "ERROR: %s\n", ex.what()); 
+    }
+}
+
+UAVV_IMAGE UIController::ConvertImage(Fl_RGB_Image* img)
+{
+    if(!img)
+        return nullptr;
+
+    int d = img->d();   // depth
+    int w = img->w();   // width
+    int h = img->h();   // height
+    int ld = (img->ld() == 0) ?  w*d : img->ld();// line padding
+    auto imageFrameBuffer = IUAVVInterface::CreateImageHandle(w, h);
+    int imgBufLen = IUAVVInterface::GetImageLength(imageFrameBuffer);
+    char* tmpBuffer = new char[imgBufLen]{0};  
+    memset(IUAVVInterface::GetImageData(imageFrameBuffer), 1, IUAVVInterface::GetImageLength(imageFrameBuffer));
+    int j=0;
+    int padding = ld - w*d;
+    bool hasPadding = (padding > 0);
+    for(auto i=0; i<imgBufLen; i+=4)
+    {
+        if(d == 1)
+        {
+            tmpBuffer[i] = img->array[j];
+            tmpBuffer[i + 1] = img->array[j];
+            tmpBuffer[i + 2] = img->array[j];
+            tmpBuffer[i + 3] = 255;
+            j += d;
+        }
+        else if(d == 2)
+        {
+            tmpBuffer[i] = img->array[j];
+            tmpBuffer[i + 1] = img->array[j];
+            tmpBuffer[i + 2] = img->array[j];
+            tmpBuffer[i + 3] = img->array[j + 1];
+            j += d;
+        }               
+        else if(d == 3)
+        {
+            tmpBuffer[i] = img->array[j];
+            tmpBuffer[i + 1] = img->array[j + 1];
+            tmpBuffer[i + 2] = img->array[j + 2];
+            tmpBuffer[i + 3] = 255;
+            j += d;
+        }
+        else if (d == 4)
+        {
+            tmpBuffer[i] = img->array[j];
+            tmpBuffer[i + 1] = img->array[j + 1];
+            tmpBuffer[i + 2] = img->array[j + 2];
+            tmpBuffer[i + 3] = img->array[j + 3];
+            j += d;
+        }
+        else
+        {
+            break;
+        }
+
+        if(hasPadding)
+        {
+            // add padding at the end of the each line
+            int rem = j % ld;
+            if((padding + rem) == ld)
+                j += padding;
+        }
+    }
+    memcpy(IUAVVInterface::GetImageData(imageFrameBuffer), tmpBuffer, IUAVVInterface::GetImageLength(imageFrameBuffer));
+    delete [] tmpBuffer;
+    return imageFrameBuffer;
 }

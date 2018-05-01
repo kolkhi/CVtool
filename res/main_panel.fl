@@ -70,9 +70,9 @@ Function {make_main_panel()} {open
   Fl_Window main_panel {
     label CVTool
     callback {Fl_Shared_Image *img = (Fl_Shared_Image *)template_preview->image();
-if (img) img->release();} open
-    xywh {252 366 600 237} type Double
-    class MainWnd non_modal size_range {600 190 600 190} visible
+if (img) img->release();} open selected
+    xywh {-32000 -32000 600 237} type Double hide
+    class MainWnd non_modal size_range {600 190 600 190}
   } {
     Fl_Text_Editor {} {
       label {Video file}
@@ -127,7 +127,7 @@ if (img) img->release();} open
     Fl_Button toggleVideoWnd {
       private image {toggle.png} xywh {535 170 40 40} type Toggle down_box DOWN_BOX selection_color 55 align 512
     }
-    Fl_Menu_Bar {} {open selected
+    Fl_Menu_Bar {} {open
       xywh {0 0 600 30}
     } {
       Submenu {} {
@@ -147,6 +147,9 @@ if (img) img->release();} open
           xywh {0 0 40 20} value 1
         }
       }
+    }
+    Fl_Button loadVideo {
+      private tooltip {Load video file} image {clipboard.png} xywh {490 95 25 25} down_box DOWN_BOX align 512
     }
   }
 }

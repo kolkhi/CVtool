@@ -17,3 +17,4 @@ mathgl/*
 !mathgl/include
 mathgl/include/*
 !mathgl/include/mgl2
+layout.cfg

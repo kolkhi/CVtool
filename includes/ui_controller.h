@@ -73,6 +73,13 @@ namespace cvtool
             void ImageBufferReceived(UAVV_IMAGE img, int delay, float pos);
             void KlvDataReceived(UAVV_KLV klvData);
             
+            void SaveLayout();
+            void LoadLayout();
+            void LoadRenderWindowLayout(const Json::Value& layout);
+            void LoadZoomWindowLayout(const Json::Value& layout);
+            void LoadKLVWindowLayout(const Json::Value& layout);
+            void LoadPlotWindowLayout(const Json::Value& layout);
+
         public:
 
             ~UIController();
@@ -108,13 +115,14 @@ namespace cvtool
             void ZoomSliderPosChange(double pos);
             void FileNameChanged();
 
-
             void ExitApplication();
             void UpdateGLFrameBufferTest();
             void UpdateCurrentZoomValue(ZoomValue newValue);
             void UpdatePosition(float pos);
             void UpdatePlayerControls();
             void UpdateDrawingButtons();
+            void PasteClipboard();
+            UAVV_IMAGE ConvertImage(Fl_RGB_Image* img);
             
             // windows event handlers
             void OnRenderMouseDown(float scaledX, float scaledY);
@@ -132,6 +140,7 @@ namespace cvtool
 
             // widget event static handlers
             static void OnPickFile(Fl_Widget*, void*);
+            static void OnPasteClipboard(Fl_Widget*, void*);
             static void OnToggleRender(Fl_Widget*, void*);
             static void OnToggleZoom(Fl_Widget*, void*);
             static void OnToggleKlv(Fl_Widget*, void*);

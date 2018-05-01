@@ -947,6 +947,67 @@ void DrawController::LoadGeometryFromFile(const std::string& filePath)
     }
 }
 
+void DrawController::SaveLines(Json::Value& root)
+{
+    root["lines"]["count"] = model.GetLinesCount();
+    for(auto i=0; i<model.GetLinesCount(); i++)
+    {
+        const Line2f* line = model.GetLine(i);
+        Json::Value arraystr;
+        arraystr["line"]["index"] = i + 1;
+        arraystr["line"]["color"] = line->color;
+        arraystr["line"]["width"] = static_cast<int>(line->lineWidth);
+        arraystr["line"]["p1"]["x"] = line->p1.x;
+        arraystr["line"]["p1"]["y"] = line->p1.y;
+        arraystr["line"]["p2"]["x"] = line->p2.x;
+        arraystr["line"]["p2"]["y"] = line->p2.y;
+        
+        root["lines"]["array"].append(arraystr);
+    }
+}
+
+void DrawController::SaveRects(Json::Value& root)
+{
+    root["rectangles"]["count"] = model.GetRectanglesCount();
+    for(auto i=0; i<model.GetRectanglesCount(); i++)
+    {
+        const Rect2f* rect = model.GetRect(i);
+        Json::Value arraystr;
+        arraystr["rect"]["index"] = i + 1;
+        arraystr["rect"]["color"] = rect->color;
+        arraystr["rect"]["width"] = static_cast<int>(rect->lineWidth);
+        arraystr["rect"]["tl"]["x"] = rect->topLeft.x;
+        arraystr["rect"]["tl"]["y"] = rect->topLeft.y;
+        arraystr["rect"]["br"]["x"] = rect->bottomRight.x;
+        arraystr["rect"]["br"]["y"] = rect->bottomRight.y;
+        
+        root["rectangles"]["array"].append(arraystr);
+    }
+}
+
+void DrawController::SavePolys(Json::Value& root)
+{
+    root["polygons"]["count"] = model.GetPolygonsCount();
+    for(auto i=0; i<model.GetPolygonsCount(); i++)
+    {
+        const Polygon2f* poly = model.GetPolygon(i);
+        Json::Value arraystr;
+        arraystr["poly"]["index"] = i + 1;
+        arraystr["poly"]["color"] = poly->color;
+        arraystr["poly"]["width"] = static_cast<int>(poly->lineWidth);
+        arraystr["poly"]["points"] = static_cast<int>(poly->points.size());
+        for(auto j=0; j<(int)poly->points.size(); j++)
+        {
+            Json::Value pointsstr;
+            pointsstr["point"]["x"] = poly->points[j].x;
+            pointsstr["point"]["y"] = poly->points[j].y;
+            arraystr["poly"]["array"].append(pointsstr); 
+        }
+        
+        root["polygons"]["array"].append(arraystr);
+    }
+}
+
 void DrawController::SaveGeometryToFile(const std::string& filePath)
 {
     try
@@ -958,7 +1019,11 @@ void DrawController::SaveGeometryToFile(const std::string& filePath)
         //root["color"] = model.GetColor();
         //root["width"] = static_cast<int>(model.GetLineWidth());
 
-        root["lines"]["count"] = model.GetLinesCount();
+        SaveLines(root);
+        SaveRects(root);
+        SavePolys(root);
+
+        /*root["lines"]["count"] = model.GetLinesCount();
         for(auto i=0; i<model.GetLinesCount(); i++)
         {
             const Line2f* line = model.GetLine(i);
@@ -1008,7 +1073,7 @@ void DrawController::SaveGeometryToFile(const std::string& filePath)
             }
             
             root["polygons"]["array"].append(arraystr);
-        }
+        }*/
 
         Json::StreamWriterBuilder builder;
         std::string document = Json::writeString(builder, root);

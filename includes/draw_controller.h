@@ -59,6 +59,10 @@ namespace cvtool
             bool ParseLine(const Json::Value& value, Line2f& line);
             bool ParseRect(const Json::Value& value, Rect2f& rect);
             bool ParsePoly(const Json::Value& value, Polygon2f& poly);
+
+            void SaveLines(Json::Value& root);
+            void SaveRects(Json::Value& root);
+            void SavePolys(Json::Value& root);
         public:
 
             ~DrawController();

@@ -169,6 +169,18 @@ int RenderWnd::handle(int event)
         ... Return 1 if you understand/use the shortcut event, 0 otherwise...
         return 1;
     */
+    case FL_PASTE:
+        {
+             Fl_RGB_Image* img  = static_cast<Fl_RGB_Image*>(Fl::event_clipboard());
+             if(img)
+             {
+                 UAVV_IMAGE convertedImageBuffer = pController->ConvertImage(img);
+                 UpdateGLFrame(convertedImageBuffer);
+                 IUAVVInterface::DestroyImageHandle(convertedImageBuffer);
+             }
+             return 0;
+        }
+        break;
     default:
         // pass other events to the base class...
         return Fl_Gl_Window::handle(event);
