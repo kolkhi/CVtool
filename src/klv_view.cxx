@@ -134,3 +134,61 @@ void KLVTableView::UpdateKLVData(const std::vector<KLVItem>& items)
     klvItems.clear();
     klvItems.insert(klvItems.begin(), items.begin(), items.end());
 }
+
+int KLVTableView::handle(int event) 
+{
+    switch(event) 
+    {
+    case FL_FOCUS :
+    case FL_UNFOCUS :
+        //... Return 1 if you want keyboard events, 0 otherwise
+        return 1;
+    case FL_KEYBOARD:
+        //... keypress, key is in Fl::event_key(), ascii in Fl::event_text()
+        //... Return 1 if you understand/use the keyboard event, 0 otherwise...
+        return 0;
+    case FL_SHORTCUT:
+        //... shortcut, key is in Fl::event_key(), ascii in Fl::event_text()
+        //... Return 1 if you understand/use the shortcut event, 0 otherwise...
+        {
+            int k = Fl::event_key();
+            int state = Fl::event_state(FL_CTRL);
+            
+            // Ctrl+c || Ctrl+C
+            if((k == 67 || k == 99) && state)
+            {
+                CopySelectedDataToClipboard();
+                return 1;
+            }
+
+            // Ctrl+a || Ctrl+A
+            if((k == 65 || k == 97) && state)
+            {
+                select_all_rows();
+                return 1;
+            }
+        }
+        return 0;
+    default:
+        // pass other events to the base class...
+        return Fl_Table_Row::handle(event);
+    }
+}
+
+void KLVTableView::CopySelectedDataToClipboard()
+{
+    std::string copyDataString;
+    for(int i=0; i<rows(); i++)
+    {
+        if(i >= static_cast<int>(klvItems.size()))
+            break;
+
+        int selected = row_selected(i);
+        if(selected == 1)
+        {
+            copyDataString += klvItems[i].itemName + "\t" + klvItems[i].itemValue + "\t" + klvItems[i].GetStateString() + "\n"; 
+        }
+    }
+
+    Fl::copy(copyDataString.c_str(), static_cast<int>(copyDataString.size()), 1);
+}

@@ -114,6 +114,7 @@ namespace cvtool
             void SliderPosChange(double pos);
             void ZoomSliderPosChange(double pos);
             void FileNameChanged();
+            void PasteImage(Fl_RGB_Image* img);
 
             void ExitApplication();
             void UpdateGLFrameBufferTest();

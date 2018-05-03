@@ -440,6 +440,17 @@ void UIController::PasteClipboard()
 #endif
 }
 
+void UIController::PasteImage(Fl_RGB_Image* img)
+{
+    if(img)
+    {
+        UAVV_IMAGE convertedImageBuffer = ConvertImage(img);
+        renderWnd->UpdateGLFrame(convertedImageBuffer);
+        zoomWnd->UpdateGLFrame(convertedImageBuffer);
+        IUAVVInterface::DestroyImageHandle(convertedImageBuffer);
+    }
+}
+
 /*static*/ void UIController::OnPasteClipboard(Fl_Widget* widget, void* pUserData)
 {
     assert(pUserData);
@@ -858,8 +869,8 @@ void UIController::ZoomSliderPosChange(double pos)
 
 /*static*/ MainWnd* UIController::makeMainPanel(UIController* controller) 
 {  
-    const int mainWndWidth = 590;
-    const int mainWndHeight = 190;
+    const int mainWndWidth = 600;
+    const int mainWndHeight = 300;
     MainWnd* main_panel = nullptr;
     { 
         main_panel = new MainWnd(0, 0, mainWndWidth, mainWndHeight, "CVTool");
@@ -1386,7 +1397,7 @@ void UIController::UpdateGLFrameBufferTest()
 void UIController::ImageBufferReceived(UAVV_IMAGE img, int delay, float pos)
 {
     renderWnd->UpdateGLFrame(img);
-
+    zoomWnd->UpdateGLFrame(img);
     Fl::awake();
 }
 
@@ -1433,7 +1444,7 @@ void UIController::KlvDataReceived(UAVV_KLV klvDataHandle)
         // Dump all KLV items to file
         for (int i = 1;  i <= count;  ++i)
         {
-            uavv_klv_key_t key = IUAVVInterface::KlvItem(klvDataHandle, i);
+            uavv_klv_key_t key = IUAVVInterface::KlvItem(klvDataHandle, i-1);
             klvItems[i].itemName = IUAVVInterface::KlvItemName(key);
             klvItems[i].itemValue = IUAVVInterface::KlvGetString(klvDataHandle, key);
             klvItems[i].itemState = IUAVVInterface::KlvIsInErrorState(klvDataHandle, key);

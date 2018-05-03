@@ -47,6 +47,7 @@ namespace cvtool
     public:
         ZoomView(int X, int Y, int W, int H, const char* l = 0);
         void UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, int zoomVal);
+        void UpdateGLFrame(const UAVV_IMAGE buf);
         void MakeZoom(int zoomVal);
         void CleanUp();
         void SetUIController(UIController* controller);

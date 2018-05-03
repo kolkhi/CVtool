@@ -73,6 +73,21 @@ void ZoomView::UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY,
     redraw();
 }
 
+void ZoomView::UpdateGLFrame(const UAVV_IMAGE buf)
+{
+    // Keep a reference to the frame buffer
+    if (!buf) 
+        return;
+    
+    std::lock_guard<std::mutex> lock(imageMutex);
+    
+    IUAVVInterface::DestroyImageHandle(mpFrame);
+    mpFrame = IUAVVInterface::CopyImageHandle(buf);
+    
+    // Schedule a redraw
+    redraw();
+}
+
 //#define DEBUG_GL_ZOOM
 void ZoomView::draw()
 {

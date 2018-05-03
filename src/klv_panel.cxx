@@ -1,15 +1,10 @@
 #include "klv_panel.h"
+#include <FL/Fl.H>
 #include <FL/Fl_Preferences.H>
 #include <uavv_wrapper.h>
 #include <ui_controller.h>
 #include <cassert>
 #include <klv_view.h>
-
-#if defined(WIN32) && !defined(__CYGWIN__)
-#include <io.h>
-#else
-#include <unistd.h>
-#endif // WIN32 && !__CYGWIN__
 
 using namespace cvtool;
 using namespace uavv;

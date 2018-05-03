@@ -26,9 +26,11 @@ namespace cvtool
     {
             UIController* pController; 
             ZoomView* zoomView;
+
         public:
             ZoomWnd(int W, int H, const char* l = 0);
             void UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, int zoomParam);
+            void UpdateGLFrame(const UAVV_IMAGE buf);
             void SetUIController(UIController* controller);
             void SetView(ZoomView* view);
             void ZoomChanged(int zoomParam);

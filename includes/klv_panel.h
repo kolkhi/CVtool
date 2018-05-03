@@ -19,14 +19,14 @@ namespace cvtool
     {
             KLVTableView* klvView;
             UIController* pController;
-
+        
         public:
             KLVWnd(int W, int H, const char* l = 0);
             void SetUIController(UIController* controller);
             void SetKLVDataView(KLVTableView* view);
             void UpdateKLVData(const std::vector<KLVItem>& items);
             void ClearData();
-            void CleanUp();
+            void CleanUp();  
     };
 }
 

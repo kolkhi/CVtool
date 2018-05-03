@@ -34,6 +34,14 @@ void ZoomWnd::UpdateGLFrame(const UAVV_IMAGE buf, float scaledX, float scaledY, 
     zoomView->UpdateGLFrame(buf, scaledX, scaledY, zoomParam);
 }
 
+void ZoomWnd::UpdateGLFrame(const UAVV_IMAGE buf)
+{
+    if (!buf) 
+        return;
+    
+    zoomView->UpdateGLFrame(buf);
+}
+
 void ZoomWnd::ClearGLFrame()
 {
     assert(zoomView);
