@@ -416,3 +416,14 @@ void VideoPlayer::AddImageToCache(UAVV_IMAGE img, float pos)
         previousImages.pop_front();
     }
 }
+
+UAVV_IMAGE VideoPlayer::GetLastLastCachedImageCopy()
+{
+    if(previousImages.size() > 0)
+    {
+        UAVV_IMAGE newImage = IUAVVInterface::CopyImageHandle(previousImages.back().first);
+        return newImage;
+    }
+
+    return nullptr;
+}

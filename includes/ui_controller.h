@@ -11,6 +11,7 @@
 #include <uavv_image.h>
 #include <data_structures.h>
 #include <vector>
+#include <deque>
 #include <draw_controller.h>
 
 #define FRAME_WIDTH             800
@@ -48,6 +49,8 @@ namespace cvtool
         std::vector<KLVItem> klvItems;
 
         shared_ptr<DrawController> drawController;
+        std::deque<ThumbnailData> thumbnails;
+        std::deque<ThumbnailData> thumbnailImageCache;
 
         protected:
             static MainWnd* makeMainPanel(UIController* controller);
@@ -80,6 +83,10 @@ namespace cvtool
             void LoadKLVWindowLayout(const Json::Value& layout);
             void LoadPlotWindowLayout(const Json::Value& layout);
 
+            void UpdateImage(UAVV_IMAGE img);
+            void SwapLastImages();
+            void AddThumbnailToCache(const ThumbnailData& thumb);
+            void ThumbnailClicked(int index);
         public:
 
             ~UIController();
@@ -124,7 +131,13 @@ namespace cvtool
             void UpdateDrawingButtons();
             void PasteClipboard();
             UAVV_IMAGE ConvertImage(Fl_RGB_Image* img);
-            
+            Fl_RGB_Image* ConvertImage(UAVV_IMAGE img);
+
+            const ThumbnailData* GetThumbnailData(int index);
+            void AddThumbnailImage(const ThumbnailData& thumbnail);
+            void ClearAllThumbnails();
+
+
             // windows event handlers
             void OnRenderMouseDown(float scaledX, float scaledY);
             void OnZoomMouseLeftDown(float scaledX, float scaledY);
@@ -157,7 +170,9 @@ namespace cvtool
             static void OnSliderPosChange(Fl_Widget*, void*);
             static void OnRenderTimeoutElapsed(void*);
             static void OnChangeFileName(Fl_Widget*, void*); 
-            static void OnZoomSliderPosChange(Fl_Widget* widget, void*);            
+            static void OnZoomSliderPosChange(Fl_Widget*, void*);          
+            static void OnThumbnailClick(Fl_Widget*, void*);
+            static void OnSwapImages(Fl_Widget*, void*);
 
             // video player callbacks 
             static void ImageDecodingNotification(UAVV_IMAGE img, int delay, float pos, void* pUserData);

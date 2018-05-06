@@ -104,6 +104,7 @@ namespace cvtool
 
             static bool InitUAVVLibrary();
             static std::string GetUAVVVersion();
+            UAVV_IMAGE GetLastLastCachedImageCopy();
     };
 }
 

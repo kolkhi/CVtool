@@ -23,18 +23,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <FL/filename.H>
-#include <FL/fl_ask.H>
-#include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_Preferences.H>
 #include <uavv_wrapper.h>
 #include <ui_controller.h>
-
-#if defined(WIN32) && !defined(__CYGWIN__)
-#include <io.h>
-#else
-#include <unistd.h>
-#endif // WIN32 && !__CYGWIN__
-extern Fl_Preferences fluid_prefs;
 
 using namespace cvtool;
 using namespace uavv;

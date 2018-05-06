@@ -12,18 +12,22 @@
 #include <video_player.h>
 #include <zoom_view.h>
 #include <Fl/Fl_Roller.H>
+#include <Fl/Fl_Scroll.H>
+#include <Fl/Fl_Tile.H>
 #include <chrono>
 #include <klv_view.h>
 #include <vector>
 #include <mgl2/Fl_MathGL.h>
 #include <plot_drawer.h>
 #include <fstream> 
+#include <draw_thumbnail.h>
 
 const std::string mainkey = "mainwnd";
 const std::string zoomkey = "zoomwnd";
 const std::string klvkey = "klvwnd";
 const std::string plotkey = "plotwnd";
 const std::string renderkey = "renderwnd";
+const int THUMBNAILS_COUNT = 10;
 
 using namespace std;
 using namespace cvtool;
@@ -50,6 +54,7 @@ static Fl_Box    *uavvStreamStateLabel = (Fl_Box *)0;
 static Fl_Slider *zoomSlider=(Fl_Slider *)0;
 static Fl_Box    *zoomLabel = (Fl_Box *)0;
 static Fl_MGLView *mathGlView = (Fl_MGLView *)0;
+static Fl_Scroll* scroll = (Fl_Scroll *)0;
 
 static Fl_Image *image_open() {
     static Fl_Image *image = new Fl_RGB_Image(idata_open, 20, 20, 4, 0);
@@ -156,6 +161,13 @@ static Fl_Image *image_undo() {
   return image;
 }
 
+static Fl_Image *image_swap() {
+  static Fl_Image *image = new Fl_RGB_Image(idata_swap, 32, 32, 4, 0);
+  return image;
+}
+
+vector<Thumbnail*> thumbs;
+
 UIController::UIController() 
     : mainWnd(nullptr)
     , renderWnd(nullptr)
@@ -178,6 +190,7 @@ UIController::~UIController()
     delete [] tmp;
 
     videoPlayer->Stop();
+    ClearAllThumbnails();
 }
 
 bool UIController::InitUAVVLibrary()
@@ -248,8 +261,6 @@ void UIController::InitUIComponents()
         plotWnd->size(Fl::w(), Fl::h());
 
     plotWnd->SetUIController(this);
-
-    LoadLayout();
 }
 
 void UIController::ShowMainWindow(int argc, char *argv[])
@@ -289,20 +300,25 @@ void UIController::ShowMainWindow(int argc, char *argv[])
         fl_message("ERROR: KLV data window is not initialized");
         return;
     }
-
-    mainWnd->show(argc, argv);
     
+    mainWnd->show(argc, argv);
+
     if(renderWndVisible)
         renderWnd->show();
-
+    
     if(zoomWndVisible)
-        zoomWnd->show();
+        zoomWnd->show();    
 
     if(klvWndVisible)
-        klvWnd->show();
+        klvWnd->show();    
 
     if(plotWndVisible)
-        plotWnd->show();    
+        plotWnd->show();   
+
+    toggleKlvWnd->value(IsKlvWindowVisible() ? 1 : 0);
+    togglePlotWnd->value(IsPlotWindowVisible() ? 1 : 0);
+    toggleZoomWnd->value(IsZoomWindowVisible() ? 1 : 0);
+    toggleVideoWnd->value(IsVideoRenderVisible() ? 1 : 0);
 }
 
 void UIController::SetupGLWindowUpdateTest()
@@ -341,6 +357,7 @@ void UIController::SetupVideoPlayer()
     uiController->InitUIComponents();
     //uiController->SetupGLWindowUpdateTest();
     uiController->SetupVideoPlayer();
+    uiController->LoadLayout();
     uiController->ShowMainWindow(argc,argv);
     
     // Let FLTK run
@@ -445,8 +462,7 @@ void UIController::PasteImage(Fl_RGB_Image* img)
     if(img)
     {
         UAVV_IMAGE convertedImageBuffer = ConvertImage(img);
-        renderWnd->UpdateGLFrame(convertedImageBuffer);
-        zoomWnd->UpdateGLFrame(convertedImageBuffer);
+        UpdateImage(convertedImageBuffer);
         IUAVVInterface::DestroyImageHandle(convertedImageBuffer);
     }
 }
@@ -1017,22 +1033,40 @@ void UIController::ZoomSliderPosChange(double pos)
             toggleVideoWnd->callback(UIController::OnToggleRender, static_cast<void*>(controller));
             toggleVideoWnd->tooltip("Show/Hide playback window");
         } // Fl_Button* toggleVideoWnd
+        {
+            scroll = new Fl_Scroll(25, 175, 490, 100);
+            int dx = 10;
+            for (int i=0; i<THUMBNAILS_COUNT; i++) 
+            {
+                Thumbnail* thumb = new Thumbnail(i, dx, 195, 60, 60, nullptr);
+                thumb->callback(UIController::OnThumbnailClick, static_cast<void*>(controller));
+                thumb->SetUIController(controller);
+                thumbs.push_back(thumb);
+                dx += 70;
+            }
 
+            scroll->end();
+            main_panel->resizable(scroll);
+        }
         { 
-            uavvLibVerLabel = new Fl_Box( FL_FLAT_BOX, 5, 170, 100, 20, controller->GetLibraryVersionString().c_str());
+            Fl_Button* swapImage = new Fl_Button(525, 235, 40, 40);
+            swapImage->image( image_swap() );
+            swapImage->callback(UIController::OnSwapImages, static_cast<void*>(controller));
+            swapImage->tooltip("Swap last shown images");
+        } // Fl_Button* swapImage
+        { 
+            uavvLibVerLabel = new Fl_Box( FL_FLAT_BOX, 5, 275, 100, 20, controller->GetLibraryVersionString().c_str());
             uavvLibVerLabel->labeltype(FL_NORMAL_LABEL);
             uavvLibVerLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
             uavvLibVerLabel->labelsize(10);
         } // Fl_Box* uavvLibVerLabel
-
         { 
-            uavvStreamStateLabel = new Fl_Box( FL_FLAT_BOX, 110, 170, 100, 20, nullptr);
+            uavvStreamStateLabel = new Fl_Box( FL_FLAT_BOX, 110, 275, 100, 20, nullptr);
             uavvStreamStateLabel->labeltype(FL_NORMAL_LABEL);
             uavvStreamStateLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
             uavvStreamStateLabel->labelsize(10);
         } // Fl_Box* uavvStreamStateLabel
 
-        main_panel->set_non_modal();
         main_panel->size_range(mainWndWidth, mainWndHeight, mainWndWidth, mainWndHeight);
         main_panel->end();
     } // MainWnd* main_panel
@@ -1055,7 +1089,6 @@ void UIController::ZoomSliderPosChange(double pos)
         o->labelcolor(FL_FOREGROUND_COLOR);
         o->when(FL_WHEN_RELEASE);
         o->callback(UIController::OnToggleRender, static_cast<void*>(controller));
-        o->set_non_modal();
         o->end();
         o->resizable(o);
     } // RenderWnd* o
@@ -1076,7 +1109,6 @@ void UIController::ZoomSliderPosChange(double pos)
         z->labelsize(14);
         z->when(FL_WHEN_RELEASE);
         z->callback(UIController::OnToggleZoom, static_cast<void*>(controller));
-        z->set_non_modal();
 
         { 
             {
@@ -1196,7 +1228,6 @@ void UIController::ZoomSliderPosChange(double pos)
                     zoomView->align(Fl_Align(FL_ALIGN_CENTER|FL_ALIGN_INSIDE));
                     zoomView->when(FL_WHEN_RELEASE);
                     zoomView->SetUIController(controller);
-                    //Fl_Group::current()->resizable(zoomView);
                 } // ZoomView* zoomView
                 MainView->end();
             } // Fl_Group* MainView
@@ -1229,7 +1260,6 @@ void UIController::ZoomSliderPosChange(double pos)
         o->labelcolor(FL_FOREGROUND_COLOR);
         o->when(FL_WHEN_RELEASE);
         o->callback(UIController::OnToggleKlv, static_cast<void*>(controller));
-        o->set_non_modal();
         {
             klvtable = new KLVTableView(20, 20, W-40, H-40, "KLV Data");
             klvtable->selection_color(FL_LIGHT1);
@@ -1279,7 +1309,6 @@ void UIController::ZoomSliderPosChange(double pos)
         o->labelcolor(FL_FOREGROUND_COLOR);
         o->when(FL_WHEN_RELEASE);
         o->callback(UIController::OnTogglePlot, static_cast<void*>(controller));
-        o->set_non_modal();
         {  
             mathGlView = new Fl_MGLView(0, 0, W, H, "Plot");
             PlotDraw* drawer = new PlotDraw();
@@ -1297,18 +1326,6 @@ void UIController::ZoomSliderPosChange(double pos)
 
 void UIController::ExitApplication()
 {
-    if(plotWnd->shown())
-        plotWnd->hide();
-
-    if(klvWnd->shown())
-        klvWnd->hide();
-
-    if(zoomWnd->shown())
-        zoomWnd->hide();
-
-    if(renderWnd->shown())
-        renderWnd->hide();
-
     plotWnd->CleanUp();
     klvWnd->CleanUp();
     zoomWnd->CleanUp();
@@ -1396,8 +1413,16 @@ void UIController::UpdateGLFrameBufferTest()
 
 void UIController::ImageBufferReceived(UAVV_IMAGE img, int delay, float pos)
 {
-    renderWnd->UpdateGLFrame(img);
-    zoomWnd->UpdateGLFrame(img);
+    UpdateImage(img);
+    UAVV_IMAGE imgMy = videoPlayer->GetLastLastCachedImageCopy();
+    if(imgMy && thumbnails.size() < THUMBNAILS_COUNT)
+    {
+        ThumbnailData data;
+        data.img = imgMy;
+        data.imgName = "Image name";
+        AddThumbnailImage(data);
+        scroll->redraw();
+    }
     Fl::awake();
 }
 
@@ -1662,8 +1687,7 @@ void UIController::LoadRenderWindowLayout(const Json::Value& layout)
     Json::Value visible = layout["visible"]; 
     if(visible.isBool())
     {
-        if(visible.asBool() != IsVideoRenderVisible())    
-            ToggleRender();
+        renderWndVisible = visible.asBool();
     }
 }
 
@@ -1688,8 +1712,7 @@ void UIController::LoadZoomWindowLayout(const Json::Value& layout)
     Json::Value visible = layout["visible"]; 
     if(visible.isBool())
     {
-        if(visible.asBool() != IsZoomWindowVisible())    
-            ToggleZoom(); 
+        zoomWndVisible = visible.asBool();
     }
 }
 
@@ -1714,8 +1737,7 @@ void UIController::LoadKLVWindowLayout(const Json::Value& layout)
     Json::Value visible = layout["visible"]; 
     if(visible.isBool())
     {
-        if(visible.asBool() != IsKlvWindowVisible())    
-            ToggleKlv(); 
+        klvWndVisible = visible.asBool();
     }
 }
 
@@ -1740,8 +1762,7 @@ void UIController::LoadPlotWindowLayout(const Json::Value& layout)
     Json::Value visible = layout["visible"]; 
     if(visible.isBool())
     {
-        if(visible.asBool() != IsPlotWindowVisible())    
-            TogglePlot(); 
+        plotWndVisible = visible.asBool(); 
     }
 }
 
@@ -1789,10 +1810,10 @@ UAVV_IMAGE UIController::ConvertImage(Fl_RGB_Image* img)
     int w = img->w();   // width
     int h = img->h();   // height
     int ld = (img->ld() == 0) ?  w*d : img->ld();// line padding
-    auto imageFrameBuffer = IUAVVInterface::CreateImageHandle(w, h);
-    int imgBufLen = IUAVVInterface::GetImageLength(imageFrameBuffer);
+    auto imageBuffer = IUAVVInterface::CreateImageHandle(w, h);
+    int imgBufLen = IUAVVInterface::GetImageLength(imageBuffer);
     char* tmpBuffer = new char[imgBufLen]{0};  
-    memset(IUAVVInterface::GetImageData(imageFrameBuffer), 1, IUAVVInterface::GetImageLength(imageFrameBuffer));
+    memset(IUAVVInterface::GetImageData(imageBuffer), 1, IUAVVInterface::GetImageLength(imageBuffer));
     int j=0;
     int padding = ld - w*d;
     bool hasPadding = (padding > 0);
@@ -1843,7 +1864,107 @@ UAVV_IMAGE UIController::ConvertImage(Fl_RGB_Image* img)
                 j += padding;
         }
     }
-    memcpy(IUAVVInterface::GetImageData(imageFrameBuffer), tmpBuffer, IUAVVInterface::GetImageLength(imageFrameBuffer));
+    memcpy(IUAVVInterface::GetImageData(imageBuffer), tmpBuffer, IUAVVInterface::GetImageLength(imageBuffer));
     delete [] tmpBuffer;
-    return imageFrameBuffer;
+    return imageBuffer;
+}
+
+Fl_RGB_Image* UIController::ConvertImage(UAVV_IMAGE img)
+{
+    if(!img)
+        return nullptr;
+
+    int d = 4;
+    int w = IUAVVInterface::GetImageWidth(img);
+    int h = IUAVVInterface::GetImageHeight(img);
+    int ld = 0;
+    int imgBufLen = IUAVVInterface::GetImageLength(img);
+    uchar* tmpBuffer = new uchar[imgBufLen]{0};
+    memcpy(tmpBuffer, IUAVVInterface::GetImageData(img), imgBufLen);
+    Fl_RGB_Image* rgbImage = new Fl_RGB_Image(tmpBuffer, w, h, d, ld);
+    return rgbImage;
+}
+
+void UIController::AddThumbnailImage(const ThumbnailData& thumbnail)
+{
+    thumbnails.push_back(thumbnail);
+    //if(thumbnails.size() < thumbs.size())
+    //    thumbs[thumbnails.size() - 1]->image(ConvertImage(thumbnails.back().img));
+}
+
+void UIController::ClearAllThumbnails()
+{
+    for(int i=0; i<(int)thumbnails.size(); i++)
+    {
+        if(thumbnails[i].img)
+            uavv::IUAVVInterface::DestroyImageHandle(thumbnails[i].img);
+    }
+    thumbnails.clear();
+    thumbnailImageCache.clear();
+}
+
+const ThumbnailData* UIController::GetThumbnailData(int index)
+{
+    if(index < (int)thumbnails.size())
+    {
+        return &thumbnails[index];
+    }
+
+    return nullptr;
+}
+
+void UIController::UpdateImage(UAVV_IMAGE img)
+{
+    renderWnd->UpdateGLFrame(img);
+    zoomWnd->UpdateGLFrame(img);
+}
+
+void UIController::AddThumbnailToCache(const ThumbnailData& thumb)
+{
+    thumbnailImageCache.push_back(thumb);
+    if(thumbnailImageCache.size() == 3)
+        thumbnailImageCache.pop_front();
+}
+
+void UIController::ThumbnailClicked(int index)
+{
+    if(index < (int)thumbnails.size())
+    {
+        Stop();
+        UpdateImage(thumbnails[index].img);
+        AddThumbnailToCache(thumbnails[index]);
+    }
+}
+
+/*static*/ void UIController::OnThumbnailClick(Fl_Widget* widget, void* pUserData)
+{
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    Thumbnail* thumb = static_cast<Thumbnail*>(widget);
+    controller->ThumbnailClicked(thumb->GetCurrentIndex());
+}
+
+void UIController::SwapLastImages()
+{
+    if(thumbnailImageCache.size() < 2)
+        return;
+
+    Stop();
+    swap(thumbnailImageCache[0], thumbnailImageCache[1]);
+    UpdateImage(thumbnailImageCache[1].img);
+}
+
+/*static*/ void UIController::OnSwapImages(Fl_Widget*, void* pUserData)
+{
+    UIController* controller = static_cast<UIController*>(pUserData); 
+    if(!controller)
+    {
+        return;
+    }
+
+    controller->SwapLastImages();
 }

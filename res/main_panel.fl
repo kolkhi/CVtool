@@ -71,8 +71,8 @@ Function {make_main_panel()} {open
     label CVTool
     callback {Fl_Shared_Image *img = (Fl_Shared_Image *)template_preview->image();
 if (img) img->release();} open selected
-    xywh {-32000 -32000 600 237} type Double hide
-    class MainWnd non_modal size_range {600 190 600 190}
+    xywh {946 322 600 338} type Double
+    class MainWnd non_modal size_range {600 190 600 190} visible
   } {
     Fl_Text_Editor {} {
       label {Video file}
@@ -150,6 +150,9 @@ if (img) img->release();} open selected
     }
     Fl_Button loadVideo {
       private tooltip {Load video file} image {clipboard.png} xywh {490 95 25 25} down_box DOWN_BOX align 512
+    }
+    Fl_Button toggleVideoWnd {
+      private image {swap.png} xywh {50 225 40 40} type Toggle down_box DOWN_BOX selection_color 55 align 512
     }
   }
 }

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <Fl/Fl.H>
+#include <uavv_image.h>
 
 namespace cvtool
 {
@@ -21,6 +22,14 @@ namespace cvtool
         {
             return itemState ? "Error" : "OK";
         }
+    }; 
+
+    struct ThumbnailData
+    {
+        ThumbnailData() : img(nullptr){}
+        
+        UAVV_IMAGE img;
+        std::string imgName;
     }; 
 
     struct Point2f
