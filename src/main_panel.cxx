@@ -27,6 +27,8 @@
 #include <FL/fl_ask.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Preferences.H>
+#include <thumbnail_widget.h>
+
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <io.h>
 #else

@@ -5,6 +5,8 @@
 #include <vector>
 #include <Fl/Fl.H>
 #include <uavv_image.h>
+#include <Fl/Fl_Shared_Image.H>
+#include <Fl/Fl_RGB_Image.H>
 
 namespace cvtool
 {
@@ -26,9 +28,10 @@ namespace cvtool
 
     struct ThumbnailData
     {
-        ThumbnailData() : img(nullptr){}
+        ThumbnailData() : img(nullptr), imageThumb(nullptr){}
         
         UAVV_IMAGE img;
+        Fl_RGB_Image* imageThumb;
         std::string imgName;
     }; 
 

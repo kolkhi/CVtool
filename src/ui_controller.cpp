@@ -20,14 +20,13 @@
 #include <mgl2/Fl_MathGL.h>
 #include <plot_drawer.h>
 #include <fstream> 
-#include <draw_thumbnail.h>
+#include <thumbnail_widget.h>
 
 const std::string mainkey = "mainwnd";
 const std::string zoomkey = "zoomwnd";
 const std::string klvkey = "klvwnd";
 const std::string plotkey = "plotwnd";
 const std::string renderkey = "renderwnd";
-const int THUMBNAILS_COUNT = 10;
 
 using namespace std;
 using namespace cvtool;
@@ -54,7 +53,7 @@ static Fl_Box    *uavvStreamStateLabel = (Fl_Box *)0;
 static Fl_Slider *zoomSlider=(Fl_Slider *)0;
 static Fl_Box    *zoomLabel = (Fl_Box *)0;
 static Fl_MGLView *mathGlView = (Fl_MGLView *)0;
-static Fl_Scroll* scroll = (Fl_Scroll *)0;
+static Fl_Scroll* thumbnailScroll = (Fl_Scroll *)0;
 
 static Fl_Image *image_open() {
     static Fl_Image *image = new Fl_RGB_Image(idata_open, 20, 20, 4, 0);
@@ -166,8 +165,6 @@ static Fl_Image *image_swap() {
   return image;
 }
 
-vector<Thumbnail*> thumbs;
-
 UIController::UIController() 
     : mainWnd(nullptr)
     , renderWnd(nullptr)
@@ -190,7 +187,6 @@ UIController::~UIController()
     delete [] tmp;
 
     videoPlayer->Stop();
-    ClearAllThumbnails();
 }
 
 bool UIController::InitUAVVLibrary()
@@ -207,10 +203,12 @@ bool UIController::InitUAVVLibrary()
 
 void UIController::InitUIComponents()
 {
-    shared_ptr<DrawController> drawTemp(DrawController::CreateInstance());
+    shared_ptr<DrawController> drawTemp(DrawController::CreateInstance(this));
     drawController = std::move(drawTemp);
-    drawController->SetUIController(this);
-
+    
+    shared_ptr<ThumbnailsController> thumbTemp(ThumbnailsController::CreateInstance(this));
+    thumbnailsController = std::move(thumbTemp);
+    
     shared_ptr<MainWnd> mainTemp(UIController::makeMainPanel(this));
     mainWnd = std::move(mainTemp);
     
@@ -447,7 +445,7 @@ void UIController::PasteClipboard()
 {
 #ifdef WIN32
     int res = Fl::clipboard_contains(Fl::clipboard_image);
-
+    
     // cliboard contains image
     if(res != 0)
     {
@@ -888,6 +886,7 @@ void UIController::ZoomSliderPosChange(double pos)
     const int mainWndWidth = 600;
     const int mainWndHeight = 300;
     MainWnd* main_panel = nullptr;
+    ThumbnailsController* thumbnailsController = controller->GetThumbnailsController().get();
     { 
         main_panel = new MainWnd(0, 0, mainWndWidth, mainWndHeight, "CVTool");
         main_panel->box(FL_FLAT_BOX);
@@ -1034,24 +1033,23 @@ void UIController::ZoomSliderPosChange(double pos)
             toggleVideoWnd->tooltip("Show/Hide playback window");
         } // Fl_Button* toggleVideoWnd
         {
-            scroll = new Fl_Scroll(25, 175, 490, 100);
-            int dx = 10;
-            for (int i=0; i<THUMBNAILS_COUNT; i++) 
+            thumbnailScroll = new Fl_Scroll(25, 175, 490, 100);
+            int dx = THUMBNAIL_OFFSET;
+            for (int i=0; i<MAX_THUMBNAILS_COUNT; i++) 
             {
-                Thumbnail* thumb = new Thumbnail(i, dx, 195, 60, 60, nullptr);
-                thumb->callback(UIController::OnThumbnailClick, static_cast<void*>(controller));
+                Thumbnail* thumb = new Thumbnail(i, dx, thumbnailScroll->y() + 20, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, nullptr);
+                thumb->callback(ThumbnailsController::OnThumbnailClick, static_cast<void*>(thumbnailsController));
                 thumb->SetUIController(controller);
-                thumbs.push_back(thumb);
-                dx += 70;
+                dx += THUMBNAIL_WIDTH + THUMBNAIL_OFFSET;
             }
 
-            scroll->end();
-            main_panel->resizable(scroll);
+            thumbnailScroll->end();
+            main_panel->resizable(thumbnailScroll);
         }
         { 
             Fl_Button* swapImage = new Fl_Button(525, 235, 40, 40);
             swapImage->image( image_swap() );
-            swapImage->callback(UIController::OnSwapImages, static_cast<void*>(controller));
+            swapImage->callback(ThumbnailsController::OnSwapImages, static_cast<void*>(thumbnailsController));
             swapImage->tooltip("Swap last shown images");
         } // Fl_Button* swapImage
         { 
@@ -1415,13 +1413,15 @@ void UIController::ImageBufferReceived(UAVV_IMAGE img, int delay, float pos)
 {
     UpdateImage(img);
     UAVV_IMAGE imgMy = videoPlayer->GetLastLastCachedImageCopy();
-    if(imgMy && thumbnails.size() < THUMBNAILS_COUNT)
+    if(imgMy)
     {
-        ThumbnailData data;
-        data.img = imgMy;
-        data.imgName = "Image name";
-        AddThumbnailImage(data);
-        scroll->redraw();
+        if(thumbnailsController->GetThumbnailsCount() < MAX_THUMBNAILS_COUNT)
+        // add image just for testing 
+            thumbnailsController->AddThumbnail(imgMy, "Add image");
+        else
+            thumbnailsController->SetThumbnail(thumbnailsController->GetThumbnailsCount() - 1,  imgMy, "New image");
+
+        RedrawThumbnails();
     }
     Fl::awake();
 }
@@ -1558,6 +1558,11 @@ void UIController::UpdateCurrentZoomValue(ZoomValue newValue)
 shared_ptr<DrawController> UIController::GetDrawController()
 {
     return drawController; 
+}
+
+shared_ptr<ThumbnailsController> UIController::GetThumbnailsController()
+{
+    return thumbnailsController; 
 }
 
 void UIController::UpdateDrawing()
@@ -1882,35 +1887,8 @@ Fl_RGB_Image* UIController::ConvertImage(UAVV_IMAGE img)
     uchar* tmpBuffer = new uchar[imgBufLen]{0};
     memcpy(tmpBuffer, IUAVVInterface::GetImageData(img), imgBufLen);
     Fl_RGB_Image* rgbImage = new Fl_RGB_Image(tmpBuffer, w, h, d, ld);
+    rgbImage->alloc_array = 1;
     return rgbImage;
-}
-
-void UIController::AddThumbnailImage(const ThumbnailData& thumbnail)
-{
-    thumbnails.push_back(thumbnail);
-    //if(thumbnails.size() < thumbs.size())
-    //    thumbs[thumbnails.size() - 1]->image(ConvertImage(thumbnails.back().img));
-}
-
-void UIController::ClearAllThumbnails()
-{
-    for(int i=0; i<(int)thumbnails.size(); i++)
-    {
-        if(thumbnails[i].img)
-            uavv::IUAVVInterface::DestroyImageHandle(thumbnails[i].img);
-    }
-    thumbnails.clear();
-    thumbnailImageCache.clear();
-}
-
-const ThumbnailData* UIController::GetThumbnailData(int index)
-{
-    if(index < (int)thumbnails.size())
-    {
-        return &thumbnails[index];
-    }
-
-    return nullptr;
 }
 
 void UIController::UpdateImage(UAVV_IMAGE img)
@@ -1919,52 +1897,14 @@ void UIController::UpdateImage(UAVV_IMAGE img)
     zoomWnd->UpdateGLFrame(img);
 }
 
-void UIController::AddThumbnailToCache(const ThumbnailData& thumb)
+void UIController::ShowImage(UAVV_IMAGE img)
 {
-    thumbnailImageCache.push_back(thumb);
-    if(thumbnailImageCache.size() == 3)
-        thumbnailImageCache.pop_front();
-}
-
-void UIController::ThumbnailClicked(int index)
-{
-    if(index < (int)thumbnails.size())
-    {
-        Stop();
-        UpdateImage(thumbnails[index].img);
-        AddThumbnailToCache(thumbnails[index]);
-    }
-}
-
-/*static*/ void UIController::OnThumbnailClick(Fl_Widget* widget, void* pUserData)
-{
-    UIController* controller = static_cast<UIController*>(pUserData); 
-    if(!controller)
-    {
-        return;
-    }
-
-    Thumbnail* thumb = static_cast<Thumbnail*>(widget);
-    controller->ThumbnailClicked(thumb->GetCurrentIndex());
-}
-
-void UIController::SwapLastImages()
-{
-    if(thumbnailImageCache.size() < 2)
-        return;
-
     Stop();
-    swap(thumbnailImageCache[0], thumbnailImageCache[1]);
-    UpdateImage(thumbnailImageCache[1].img);
+    UpdateImage(img);
 }
 
-/*static*/ void UIController::OnSwapImages(Fl_Widget*, void* pUserData)
+void UIController::RedrawThumbnails()
 {
-    UIController* controller = static_cast<UIController*>(pUserData); 
-    if(!controller)
-    {
-        return;
-    }
-
-    controller->SwapLastImages();
+    if(thumbnailScroll)
+        thumbnailScroll->redraw();
 }

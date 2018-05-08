@@ -1,13 +1,8 @@
-#ifndef draw_thumbnail_h
-#define draw_thumbnail_h
+#ifndef thumbnail_widget_h
+#define thumbnail_widget_h
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
-#include <FL/Fl_Gl_Window.H>
-#include <FL/Fl.H>
-#include <FL/gl.h>
-#include <mutex>
-#include <gl_uavv_image.h>
 
 namespace cvtool
 {
@@ -16,9 +11,6 @@ namespace cvtool
     {
         UIController* pController;
         int currentIndex;
-
-        GLUavvImage mGlFrame;
-        std::mutex  imageMutex;
 
         void draw();
         int handle(int event);

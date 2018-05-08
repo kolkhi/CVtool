@@ -13,12 +13,16 @@
 #include <vector>
 #include <deque>
 #include <draw_controller.h>
+#include <thumbnails_controller.h>
 
 #define FRAME_WIDTH             800
 #define FRAME_HEIGHT            600
 
-using namespace std;
+#define THUMBNAIL_WIDTH         60
+#define THUMBNAIL_HEIGHT        60
+#define THUMBNAIL_OFFSET        10
 
+using namespace std;
 namespace cvtool
 {
     class VideoPlayer;
@@ -49,9 +53,8 @@ namespace cvtool
         std::vector<KLVItem> klvItems;
 
         shared_ptr<DrawController> drawController;
-        std::deque<ThumbnailData> thumbnails;
-        std::deque<ThumbnailData> thumbnailImageCache;
-
+        shared_ptr<ThumbnailsController> thumbnailsController;
+        
         protected:
             static MainWnd* makeMainPanel(UIController* controller);
             static RenderWnd* makeRenderPanel(UIController* controller, int W, int H, const char* l = 0);
@@ -84,9 +87,6 @@ namespace cvtool
             void LoadPlotWindowLayout(const Json::Value& layout);
 
             void UpdateImage(UAVV_IMAGE img);
-            void SwapLastImages();
-            void AddThumbnailToCache(const ThumbnailData& thumb);
-            void ThumbnailClicked(int index);
         public:
 
             ~UIController();
@@ -103,7 +103,10 @@ namespace cvtool
             void SetupGLWindowUpdateTest();
             void SetupVideoPlayer();
             shared_ptr<DrawController> GetDrawController();
+            shared_ptr<ThumbnailsController> GetThumbnailsController();
             void UpdateDrawing();
+            void RedrawThumbnails();
+            void ShowImage(UAVV_IMAGE img);
             
             // button click handlers
             void ToggleRender();
@@ -132,11 +135,6 @@ namespace cvtool
             void PasteClipboard();
             UAVV_IMAGE ConvertImage(Fl_RGB_Image* img);
             Fl_RGB_Image* ConvertImage(UAVV_IMAGE img);
-
-            const ThumbnailData* GetThumbnailData(int index);
-            void AddThumbnailImage(const ThumbnailData& thumbnail);
-            void ClearAllThumbnails();
-
 
             // windows event handlers
             void OnRenderMouseDown(float scaledX, float scaledY);
@@ -171,8 +169,6 @@ namespace cvtool
             static void OnRenderTimeoutElapsed(void*);
             static void OnChangeFileName(Fl_Widget*, void*); 
             static void OnZoomSliderPosChange(Fl_Widget*, void*);          
-            static void OnThumbnailClick(Fl_Widget*, void*);
-            static void OnSwapImages(Fl_Widget*, void*);
 
             // video player callbacks 
             static void ImageDecodingNotification(UAVV_IMAGE img, int delay, float pos, void* pUserData);

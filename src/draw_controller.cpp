@@ -7,6 +7,7 @@
 #include <FL/Fl_Native_File_Chooser.H>
 #include <json/json.h>
 #include <fstream>
+#include <Fl/fl_message.H> 
 
 using namespace std;
 using namespace cvtool;
@@ -49,9 +50,11 @@ void DrawController::Redraw()
     uiController->UpdateDrawing();
 }
 
-/*static*/ DrawController* DrawController::CreateInstance()
+/*static*/ DrawController* DrawController::CreateInstance(UIController* controller)
 {
-    return new DrawController();
+    DrawController* instance = new DrawController();
+    instance->SetUIController(controller);
+    return instance;
 }
 
 void DrawController::SetCurrentColor(Fl_Color color)

@@ -1,7 +1,7 @@
 TEST_SRC1 = ./src/main.cpp ./src/ui_controller.cpp ./src/video_player.cpp ./src/uavv_wrapper.cpp \
 			./src/xloader.c ./src/main_panel.cxx ./src/render_panel.cxx ./src/zoom_panel.cxx \
 			./src/zoom_view.cxx ./src/klv_panel.cxx ./src/klv_view.cxx ./src/draw_controller.cpp ./src/draw_model.cpp \
-			./src/plot_panel.cxx ./src/plot_drawer.cpp ./src/jsoncpp.cpp ./src/draw_thumbnail.cxx
+			./src/plot_panel.cxx ./src/plot_drawer.cpp ./src/jsoncpp.cpp ./src/thumbnail_widget.cxx ./src/thumbnails_controller.cpp
 
 TEST_BIN1 = CVTool$(BIN_EXT)
 
@@ -92,7 +92,10 @@ draw_model.o:  ./src/draw_model.cpp
 jsoncpp.o:  ./src/jsoncpp.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 
-draw_thumbnail.o:  ./src/draw_thumbnail.cxx
+thumbnail_widget.o:  ./src/thumbnail_widget.cxx
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
+
+thumbnails_controller.o:  ./src/thumbnails_controller.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $^
 
 .PHONY: clear

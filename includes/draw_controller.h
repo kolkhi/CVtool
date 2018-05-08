@@ -63,6 +63,7 @@ namespace cvtool
             void SaveLines(Json::Value& root);
             void SaveRects(Json::Value& root);
             void SavePolys(Json::Value& root);
+            void SetUIController(UIController* controller);
         public:
 
             ~DrawController();
@@ -80,8 +81,7 @@ namespace cvtool
             const Figure2f* GetPreviewFigure() const;
 
             // contoller management functions
-            static DrawController* CreateInstance();
-            void SetUIController(UIController* controller);
+            static DrawController* CreateInstance(UIController* controller);
 
             void SetCurrentColor(Fl_Color color);
             Fl_Color GetCurrentColor() const;
