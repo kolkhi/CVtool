@@ -87,6 +87,7 @@ namespace cvtool
             void LoadPlotWindowLayout(const Json::Value& layout);
 
             void UpdateImage(UAVV_IMAGE img);
+            void SetZoomMode();
         public:
 
             ~UIController();

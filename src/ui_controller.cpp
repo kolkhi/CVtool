@@ -357,7 +357,8 @@ void UIController::SetupVideoPlayer()
     uiController->SetupVideoPlayer();
     uiController->LoadLayout();
     uiController->ShowMainWindow(argc,argv);
-    
+    uiController->SetZoomMode();
+
     // Let FLTK run
     int res = Fl::run();
 
@@ -369,9 +370,6 @@ void UIController::SetupVideoPlayer()
 
 /*static*/ void UIController::SetupSystemSettings()
 {
-    //Fl::scheme("gleam")
-    //Fl::scheme("plastic)
-   
     Fl::scheme("gtk+");
     Fl::get_system_colors();
     Fl::visual(FL_RGB);
@@ -575,10 +573,8 @@ void UIController::ToggleRender()
     controller->ToggleRender();
 }
 
-void UIController::ToggleZoom()
+void UIController::SetZoomMode()
 {
-    zoomWndVisible = !zoomWndVisible;
-    toggleZoomWnd->value(IsZoomWindowVisible() ? 1 : 0);
     if(zoomWndVisible)
     {
         zoomState = ZoomMode::ZoomIn;
@@ -589,7 +585,13 @@ void UIController::ToggleZoom()
         zoomState = ZoomMode::ZoomOff;
         renderWnd->cursor(FL_CURSOR_DEFAULT);
     }
+}
 
+void UIController::ToggleZoom()
+{
+    zoomWndVisible = !zoomWndVisible;
+    toggleZoomWnd->value(IsZoomWindowVisible() ? 1 : 0);
+    SetZoomMode();
     UpdateZoomWindowVisibility();
 }
 
