@@ -1901,7 +1901,6 @@ void UIController::UpdateImage(UAVV_IMAGE img)
 
 void UIController::ShowImage(UAVV_IMAGE img)
 {
-    Stop();
     UpdateImage(img);
 }
 

@@ -51,7 +51,7 @@ void ThumbnailsController::RemoveThumbnail(int index)
         return;
 
     std::lock_guard<std::mutex> lock(imageMutex);
-    
+
     RemoveThumbnailFromCache(thumbnails[index].img);
     if(thumbnails[index].img)
         uavv::IUAVVInterface::DestroyImageHandle(thumbnails[index].img);
@@ -181,7 +181,8 @@ void ThumbnailsController::ThumbnailClicked(int index)
 {
     assert(uiController);
     if(index < (int)thumbnails.size())
-    {
+    {   
+        uiController->Stop();
         uiController->ShowImage(thumbnails[index].img);
         AddThumbnailToCache(thumbnails[index].img);
     }
@@ -206,6 +207,7 @@ void ThumbnailsController::SwapLastImages()
 
     assert(uiController);
     swap(thumbnailImageCache[0], thumbnailImageCache[1]);
+    uiController->Stop();
     uiController->ShowImage(thumbnailImageCache[1]);
 }
 
