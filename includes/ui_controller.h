@@ -88,6 +88,7 @@ namespace cvtool
 
             void UpdateImage(UAVV_IMAGE img);
             void SetZoomMode();
+            void UpdateZoomCursor();
         public:
 
             ~UIController();

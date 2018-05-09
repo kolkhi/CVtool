@@ -497,9 +497,14 @@ void UIController::UpdateRenderWindowVisibility()
         return;
 
     if(renderWndVisible)
+    {
         renderWnd->show();
+        UpdateZoomCursor();
+    }
     else
+    {
         renderWnd->hide();
+    }
 }
 
 void UIController::UpdateZoomWindowVisibility()
@@ -573,18 +578,22 @@ void UIController::ToggleRender()
     controller->ToggleRender();
 }
 
-void UIController::SetZoomMode()
+void UIController::UpdateZoomCursor()
 {
     if(zoomWndVisible)
     {
-        zoomState = ZoomMode::ZoomIn;
         renderWnd->cursor(image_zoomin_mouse(), 10, 10);
     }    
     else
     {
-        zoomState = ZoomMode::ZoomOff;
         renderWnd->cursor(FL_CURSOR_DEFAULT);
     }
+}
+
+void UIController::SetZoomMode()
+{
+    zoomState = zoomWndVisible ? ZoomMode::ZoomIn : ZoomMode::ZoomOff;
+    UpdateZoomCursor();
 }
 
 void UIController::ToggleZoom()
